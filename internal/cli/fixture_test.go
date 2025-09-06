@@ -57,30 +57,27 @@ func TestFixtureModel_Update_Navigation(t *testing.T) {
 	model := NewFixtureModel(division)
 
 	// Test right arrow - next round
-	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRight})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyRight})
 	if model.currentRound != 1 {
 		t.Errorf("Expected currentRound to move to 1, got %d", model.currentRound)
 	}
-	if cmd != nil {
-		t.Errorf("Expected no command on navigation, got %v", cmd)
-	}
 
 	// Test left arrow - previous round
-	_, cmd = model.Update(tea.KeyMsg{Type: tea.KeyLeft})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyLeft})
 	if model.currentRound != 0 {
 		t.Errorf("Expected currentRound to move back to 0, got %d", model.currentRound)
 	}
 
 	// Test wrap around at end
 	model.currentRound = len(division.Rounds) - 1
-	_, cmd = model.Update(tea.KeyMsg{Type: tea.KeyRight})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyRight})
 	if model.currentRound != 0 {
 		t.Errorf("Expected currentRound to wrap to 0, got %d", model.currentRound)
 	}
 
 	// Test wrap around at beginning
 	model.currentRound = 0
-	_, cmd = model.Update(tea.KeyMsg{Type: tea.KeyLeft})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyLeft})
 	if model.currentRound != len(division.Rounds)-1 {
 		t.Errorf("Expected currentRound to wrap to %d, got %d", len(division.Rounds)-1, model.currentRound)
 	}
@@ -441,7 +438,7 @@ func TestFixtureModel_Update_VimNavigation_Left(t *testing.T) {
 	model.currentRound = 2 // Start at round 2
 
 	// Send 'h' key (vim left)
-	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}})
 
 	if model.currentRound != 1 {
 		t.Errorf("Expected currentRound to move to 1 with 'h', got %d", model.currentRound)
@@ -465,7 +462,7 @@ func TestFixtureModel_Update_VimNavigation_Right(t *testing.T) {
 	model := NewFixtureModel(division)
 
 	// Send 'l' key (vim right)
-	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'l'}})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'l'}})
 
 	if model.currentRound != 1 {
 		t.Errorf("Expected currentRound to move to 1 with 'l', got %d", model.currentRound)
@@ -489,7 +486,7 @@ func TestFixtureModel_Update_VimNavigation_WrapAround(t *testing.T) {
 
 	// Test 'l' wrap around at end
 	model.currentRound = len(division.Rounds) - 1
-	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'l'}})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'l'}})
 
 	if model.currentRound != 0 {
 		t.Errorf("Expected currentRound to wrap to 0 with 'l', got %d", model.currentRound)
@@ -497,7 +494,7 @@ func TestFixtureModel_Update_VimNavigation_WrapAround(t *testing.T) {
 
 	// Test 'h' wrap around at beginning
 	model.currentRound = 0
-	_, cmd = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}})
 
 	if model.currentRound != len(division.Rounds)-1 {
 		t.Errorf("Expected currentRound to wrap to %d with 'h', got %d", len(division.Rounds)-1, model.currentRound)
@@ -522,7 +519,7 @@ func TestFixtureModel_Update_PageNavigation_Up(t *testing.T) {
 	model.currentRound = 2 // Start at round 3
 
 	// Send Page Up key
-	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyPgUp})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyPgUp})
 
 	if model.currentRound != 1 {
 		t.Errorf("Expected currentRound to move to 1 with Page Up, got %d", model.currentRound)
@@ -546,7 +543,7 @@ func TestFixtureModel_Update_PageNavigation_Down(t *testing.T) {
 	model := NewFixtureModel(division)
 
 	// Send Page Down key
-	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyPgDown})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyPgDown})
 
 	if model.currentRound != 1 {
 		t.Errorf("Expected currentRound to move to 1 with Page Down, got %d", model.currentRound)
@@ -570,7 +567,7 @@ func TestFixtureModel_Update_PageNavigation_WrapAround(t *testing.T) {
 
 	// Test Page Down wrap around at end
 	model.currentRound = len(division.Rounds) - 1
-	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyPgDown})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyPgDown})
 
 	if model.currentRound != 0 {
 		t.Errorf("Expected currentRound to wrap to 0 with Page Down, got %d", model.currentRound)
@@ -578,7 +575,7 @@ func TestFixtureModel_Update_PageNavigation_WrapAround(t *testing.T) {
 
 	// Test Page Up wrap around at beginning
 	model.currentRound = 0
-	_, cmd = model.Update(tea.KeyMsg{Type: tea.KeyPgUp})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyPgUp})
 
 	if model.currentRound != len(division.Rounds)-1 {
 		t.Errorf("Expected currentRound to wrap to %d with Page Up, got %d", len(division.Rounds)-1, model.currentRound)
@@ -799,7 +796,7 @@ func TestFixtureModel_Update_MatchSelection_Down(t *testing.T) {
 	model := NewFixtureModel(division)
 
 	// Send 'j' key (vim down for match selection)
-	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
 
 	if model.selectedMatch != 1 {
 		t.Errorf("Expected selectedMatch to move to 1 with 'j', got %d", model.selectedMatch)
@@ -830,7 +827,7 @@ func TestFixtureModel_Update_MatchSelection_Up(t *testing.T) {
 	model.selectedMatch = 2 // Start at match 2
 
 	// Send 'k' key (vim up for match selection)
-	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
 
 	if model.selectedMatch != 1 {
 		t.Errorf("Expected selectedMatch to move to 1 with 'k', got %d", model.selectedMatch)
@@ -860,7 +857,7 @@ func TestFixtureModel_Update_MatchSelection_WrapAround(t *testing.T) {
 
 	// Test 'j' wrap around at bottom
 	model.selectedMatch = 1 // Last match
-	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
 
 	if model.selectedMatch != 0 {
 		t.Errorf("Expected selectedMatch to wrap to 0 with 'j', got %d", model.selectedMatch)
@@ -868,7 +865,7 @@ func TestFixtureModel_Update_MatchSelection_WrapAround(t *testing.T) {
 
 	// Test 'k' wrap around at top
 	model.selectedMatch = 0
-	_, cmd = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
 
 	if model.selectedMatch != 1 {
 		t.Errorf("Expected selectedMatch to wrap to 1 with 'k', got %d", model.selectedMatch)

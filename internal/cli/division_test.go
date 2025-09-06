@@ -52,21 +52,21 @@ func TestDivisionModel_Update_Navigation(t *testing.T) {
 	}
 
 	// Test cursor up
-	_, cmd = model.Update(tea.KeyMsg{Type: tea.KeyUp})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyUp})
 	if model.cursor != 0 {
 		t.Errorf("Expected cursor to move back to 0, got %d", model.cursor)
 	}
 
 	// Test wrap around at bottom
 	model.cursor = len(model.divisions) - 1
-	_, cmd = model.Update(tea.KeyMsg{Type: tea.KeyDown})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyDown})
 	if model.cursor != 0 {
 		t.Errorf("Expected cursor to wrap to 0, got %d", model.cursor)
 	}
 
 	// Test wrap around at top
 	model.cursor = 0
-	_, cmd = model.Update(tea.KeyMsg{Type: tea.KeyUp})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyUp})
 	if model.cursor != len(model.divisions)-1 {
 		t.Errorf("Expected cursor to wrap to %d, got %d", len(model.divisions)-1, model.cursor)
 	}
@@ -156,16 +156,16 @@ func TestDivisionModel_GetSelectedDivision(t *testing.T) {
 	model := NewDivisionModel()
 
 	testCases := []struct {
-		cursor   int
 		expected string
+		cursor   int
 	}{
-		{cursor: 0, expected: "Elite"},
-		{cursor: 1, expected: "Platinum A"},
-		{cursor: 2, expected: "Platinum B"},
-		{cursor: 3, expected: "Oro A"},
-		{cursor: 4, expected: "Oro B"},
-		{cursor: 5, expected: "Oro C"},
-		{cursor: 6, expected: "Oro D"},
+		{expected: "Elite", cursor: 0},
+		{expected: "Platinum A", cursor: 1},
+		{expected: "Platinum B", cursor: 2},
+		{expected: "Oro A", cursor: 3},
+		{expected: "Oro B", cursor: 4},
+		{expected: "Oro C", cursor: 5},
+		{expected: "Oro D", cursor: 6},
 	}
 
 	for _, tc := range testCases {
@@ -182,16 +182,16 @@ func TestDivisionModel_GetFilename(t *testing.T) {
 	model := NewDivisionModel()
 
 	testCases := []struct {
-		cursor   int
 		expected string
+		cursor   int
 	}{
-		{cursor: 0, expected: "data/Liga Argentina - 1° Temporada - E-Fixture.csv"},
-		{cursor: 1, expected: "data/Liga Argentina - 1° Temporada - P.A-Fixture.csv"},
-		{cursor: 2, expected: "data/Liga Argentina - 1° Temporada - P.B-Fixture.csv"},
-		{cursor: 3, expected: "data/Liga Argentina - 1° Temporada - O.A-Fixture.csv"},
-		{cursor: 4, expected: "data/Liga Argentina - 1° Temporada - O.B-Fixture.csv"},
-		{cursor: 5, expected: "data/Liga Argentina - 1° Temporada - O.C-Fixture.csv"},
-		{cursor: 6, expected: "data/Liga Argentina - 1° Temporada - O.D-Fixture.csv"},
+		{expected: "data/Liga Argentina - 1° Temporada - E-Fixture.csv", cursor: 0},
+		{expected: "data/Liga Argentina - 1° Temporada - P.A-Fixture.csv", cursor: 1},
+		{expected: "data/Liga Argentina - 1° Temporada - P.B-Fixture.csv", cursor: 2},
+		{expected: "data/Liga Argentina - 1° Temporada - O.A-Fixture.csv", cursor: 3},
+		{expected: "data/Liga Argentina - 1° Temporada - O.B-Fixture.csv", cursor: 4},
+		{expected: "data/Liga Argentina - 1° Temporada - O.C-Fixture.csv", cursor: 5},
+		{expected: "data/Liga Argentina - 1° Temporada - O.D-Fixture.csv", cursor: 6},
 	}
 
 	for _, tc := range testCases {
@@ -240,7 +240,7 @@ func TestDivisionModel_Update_VimNavigation_WrapAround(t *testing.T) {
 
 	// Test 'j' wrap around at bottom
 	model.cursor = len(model.divisions) - 1 // Last item
-	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
 
 	if model.cursor != 0 {
 		t.Errorf("Expected cursor to wrap to 0 with 'j', got %d", model.cursor)
@@ -248,7 +248,7 @@ func TestDivisionModel_Update_VimNavigation_WrapAround(t *testing.T) {
 
 	// Test 'k' wrap around at top
 	model.cursor = 0
-	_, cmd = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
 
 	if model.cursor != len(model.divisions)-1 {
 		t.Errorf("Expected cursor to wrap to %d with 'k', got %d", len(model.divisions)-1, model.cursor)

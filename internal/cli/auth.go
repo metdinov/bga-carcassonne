@@ -9,7 +9,7 @@ import (
 
 // GetBGACredentials retrieves BGA credentials from environment variables or .env file
 // Environment variables take precedence over .env file values
-func GetBGACredentials() (string, string, error) {
+func GetBGACredentials() (username, password string, err error) {
 	// Check environment variables first
 	user := os.Getenv("BGA_USER")
 	pass := os.Getenv("BGA_PASS")
@@ -39,7 +39,7 @@ func GetBGACredentials() (string, string, error) {
 }
 
 // loadFromEnvFile reads BGA credentials from a .env file
-func loadFromEnvFile() (string, string, error) {
+func loadFromEnvFile() (username, password string, err error) {
 	file, err := os.Open(".env")
 	if err != nil {
 		return "", "", err
@@ -131,7 +131,7 @@ func SaveCredentialsToEnv(user, pass string) error {
 
 // GetOrPromptCredentials gets credentials from env/file or prompts user if missing
 // If saveToEnv is true and credentials are prompted, they will be saved to .env file
-func GetOrPromptCredentials(saveToEnv bool) (string, string, error) {
+func GetOrPromptCredentials(saveToEnv bool) (username, password string, err error) {
 	// First try to get credentials from environment or .env file
 	user, pass, err := GetBGACredentials()
 	if err == nil {
@@ -146,7 +146,7 @@ func GetOrPromptCredentials(saveToEnv bool) (string, string, error) {
 
 // PromptForCredentials interactively prompts user for BGA credentials
 // This function will be implemented with Bubble Tea for proper TUI interaction
-func PromptForCredentials() (string, string, error) {
+func PromptForCredentials() (username, password string, err error) {
 	// TODO: Implement with Bubble Tea interactive prompts
 	return "", "", fmt.Errorf("interactive prompting not yet implemented")
 }

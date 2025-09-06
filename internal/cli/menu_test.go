@@ -40,7 +40,7 @@ func TestMenuModel_Update_CursorDown(t *testing.T) {
 	model := NewMenuModel()
 
 	// Send arrow down key
-	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyDown})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyDown})
 
 	if model.cursor != 1 {
 		t.Errorf("Expected cursor to move to 1, got %d", model.cursor)
@@ -56,7 +56,7 @@ func TestMenuModel_Update_CursorUp(t *testing.T) {
 	model.cursor = 2 // Start at position 2
 
 	// Send arrow up key
-	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyUp})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyUp})
 
 	if model.cursor != 1 {
 		t.Errorf("Expected cursor to move to 1, got %d", model.cursor)
@@ -72,7 +72,7 @@ func TestMenuModel_Update_CursorWrapAround(t *testing.T) {
 
 	// Test wrap around at bottom
 	model.cursor = len(model.choices) - 1 // Last item
-	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyDown})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyDown})
 
 	if model.cursor != 0 {
 		t.Errorf("Expected cursor to wrap to 0, got %d", model.cursor)
@@ -80,7 +80,7 @@ func TestMenuModel_Update_CursorWrapAround(t *testing.T) {
 
 	// Test wrap around at top
 	model.cursor = 0
-	_, cmd = model.Update(tea.KeyMsg{Type: tea.KeyUp})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyUp})
 
 	if model.cursor != len(model.choices)-1 {
 		t.Errorf("Expected cursor to wrap to %d, got %d", len(model.choices)-1, model.cursor)
@@ -151,13 +151,13 @@ func TestMenuModel_GetSelectedChoice(t *testing.T) {
 	model := NewMenuModel()
 
 	testCases := []struct {
-		cursor   int
 		expected string
+		cursor   int
 	}{
-		{cursor: 0, expected: "Create Tournament"},
-		{cursor: 1, expected: "View Fixture"},
-		{cursor: 2, expected: "View Positions"},
-		{cursor: 3, expected: "Exit"},
+		{expected: "Create Tournament", cursor: 0},
+		{expected: "View Fixture", cursor: 1},
+		{expected: "View Positions", cursor: 2},
+		{expected: "Exit", cursor: 3},
 	}
 
 	for _, tc := range testCases {
@@ -229,7 +229,7 @@ func TestMenuModel_Update_VimNavigation_Down(t *testing.T) {
 	model := NewMenuModel()
 
 	// Send 'j' key (vim down)
-	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
 
 	if model.cursor != 1 {
 		t.Errorf("Expected cursor to move to 1 with 'j', got %d", model.cursor)
@@ -245,7 +245,7 @@ func TestMenuModel_Update_VimNavigation_Up(t *testing.T) {
 	model.cursor = 2 // Start at position 2
 
 	// Send 'k' key (vim up)
-	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
 
 	if model.cursor != 1 {
 		t.Errorf("Expected cursor to move to 1 with 'k', got %d", model.cursor)
@@ -261,7 +261,7 @@ func TestMenuModel_Update_VimNavigation_WrapAround(t *testing.T) {
 
 	// Test 'j' wrap around at bottom
 	model.cursor = len(model.choices) - 1 // Last item
-	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
 
 	if model.cursor != 0 {
 		t.Errorf("Expected cursor to wrap to 0 with 'j', got %d", model.cursor)
@@ -269,7 +269,7 @@ func TestMenuModel_Update_VimNavigation_WrapAround(t *testing.T) {
 
 	// Test 'k' wrap around at top
 	model.cursor = 0
-	_, cmd = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
+	_, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
 
 	if model.cursor != len(model.choices)-1 {
 		t.Errorf("Expected cursor to wrap to %d with 'k', got %d", len(model.choices)-1, model.cursor)
