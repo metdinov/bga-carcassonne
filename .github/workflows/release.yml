@@ -1,0 +1,81 @@
+name: Release Carca
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+
+      - name: Build artifacts
+        run: |
+          GOOS=linux GOARCH=amd64 go build -buildvcs=false -ldflags="-s -w" -o carca-linux-amd64 ./cmd/carca
+          GOOS=darwin GOARCH=amd64 go build -buildvcs=false -ldflags="-s -w" -o carca-darwin-amd64 ./cmd/carca
+          GOOS=darwin GOARCH=arm64 go build -buildvcs=false -ldflags="-s -w" -o carca-darwin-arm64 ./cmd/carca
+          GOOS=windows GOARCH=amd64 go build -buildvcs=false -ldflags="-s -w" -o carca-windows-amd64.exe ./cmd/carca
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset (Linux)
+        id: upload-release-asset-linux
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./carca-linux-amd64
+          asset_name: carca-linux-amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset (macOS AMD64)
+        id: upload-release-asset-darwin-amd64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./carca-darwin-amd64
+          asset_name: carca-darwin-amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset (macOS ARM64)
+        id: upload-release-asset-darwin-arm64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./carca-darwin-arm64
+          asset_name: carca-darwin-arm64
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset (Windows)
+        id: upload-release-asset-windows
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./carca-windows-amd64.exe
+          asset_name: carca-windows-amd64.exe
+          asset_content_type: application/octet-stream
