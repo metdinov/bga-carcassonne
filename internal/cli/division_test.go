@@ -203,3 +203,58 @@ func TestDivisionModel_GetFilename(t *testing.T) {
 		}
 	}
 }
+
+func TestDivisionModel_Update_VimNavigation_Down(t *testing.T) {
+	model := NewDivisionModel()
+
+	// Send 'j' key (vim down)
+	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+
+	if model.cursor != 1 {
+		t.Errorf("Expected cursor to move to 1 with 'j', got %d", model.cursor)
+	}
+
+	if cmd != nil {
+		t.Errorf("Expected no command on vim navigation, got %v", cmd)
+	}
+}
+
+func TestDivisionModel_Update_VimNavigation_Up(t *testing.T) {
+	model := NewDivisionModel()
+	model.cursor = 2 // Start at position 2
+
+	// Send 'k' key (vim up)
+	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
+
+	if model.cursor != 1 {
+		t.Errorf("Expected cursor to move to 1 with 'k', got %d", model.cursor)
+	}
+
+	if cmd != nil {
+		t.Errorf("Expected no command on vim navigation, got %v", cmd)
+	}
+}
+
+func TestDivisionModel_Update_VimNavigation_WrapAround(t *testing.T) {
+	model := NewDivisionModel()
+
+	// Test 'j' wrap around at bottom
+	model.cursor = len(model.divisions) - 1 // Last item
+	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+
+	if model.cursor != 0 {
+		t.Errorf("Expected cursor to wrap to 0 with 'j', got %d", model.cursor)
+	}
+
+	// Test 'k' wrap around at top
+	model.cursor = 0
+	_, cmd = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
+
+	if model.cursor != len(model.divisions)-1 {
+		t.Errorf("Expected cursor to wrap to %d with 'k', got %d", len(model.divisions)-1, model.cursor)
+	}
+
+	if cmd != nil {
+		t.Errorf("Expected no command on vim navigation, got %v", cmd)
+	}
+}

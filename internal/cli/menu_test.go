@@ -200,3 +200,82 @@ func TestMenuModel_HandleViewFixtureFlow(t *testing.T) {
 		t.Fatal("Expected command for View Fixture selection")
 	}
 }
+
+func TestMenuModel_Update_QuitWithQ(t *testing.T) {
+	model := NewMenuModel()
+
+	// Send 'q' key
+	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+
+	if cmd == nil {
+		t.Fatal("Expected quit command when pressing 'q'")
+	}
+
+	// We just verify a command was returned - the actual quit behavior
+	// is handled by the Bubble Tea runtime
+}
+
+func TestMenuModel_View_ShowsQuitInstructions(t *testing.T) {
+	model := NewMenuModel()
+
+	view := model.View()
+
+	if !strings.Contains(view, "Press q/Ctrl+C to quit, ↑/↓ or j/k to navigate") {
+		t.Errorf("Expected view to show quit and vim navigation instructions, got: %s", view)
+	}
+}
+
+func TestMenuModel_Update_VimNavigation_Down(t *testing.T) {
+	model := NewMenuModel()
+
+	// Send 'j' key (vim down)
+	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+
+	if model.cursor != 1 {
+		t.Errorf("Expected cursor to move to 1 with 'j', got %d", model.cursor)
+	}
+
+	if cmd != nil {
+		t.Errorf("Expected no command on vim navigation, got %v", cmd)
+	}
+}
+
+func TestMenuModel_Update_VimNavigation_Up(t *testing.T) {
+	model := NewMenuModel()
+	model.cursor = 2 // Start at position 2
+
+	// Send 'k' key (vim up)
+	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
+
+	if model.cursor != 1 {
+		t.Errorf("Expected cursor to move to 1 with 'k', got %d", model.cursor)
+	}
+
+	if cmd != nil {
+		t.Errorf("Expected no command on vim navigation, got %v", cmd)
+	}
+}
+
+func TestMenuModel_Update_VimNavigation_WrapAround(t *testing.T) {
+	model := NewMenuModel()
+
+	// Test 'j' wrap around at bottom
+	model.cursor = len(model.choices) - 1 // Last item
+	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+
+	if model.cursor != 0 {
+		t.Errorf("Expected cursor to wrap to 0 with 'j', got %d", model.cursor)
+	}
+
+	// Test 'k' wrap around at top
+	model.cursor = 0
+	_, cmd = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
+
+	if model.cursor != len(model.choices)-1 {
+		t.Errorf("Expected cursor to wrap to %d with 'k', got %d", len(model.choices)-1, model.cursor)
+	}
+
+	if cmd != nil {
+		t.Errorf("Expected no command on vim navigation, got %v", cmd)
+	}
+}

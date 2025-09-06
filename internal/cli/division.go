@@ -94,6 +94,18 @@ func (m *DivisionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, func() tea.Msg {
 					return BackToMenuMsg{}
 				}
+			case "j":
+				// Vim down
+				m.cursor++
+				if m.cursor >= len(m.divisions) {
+					m.cursor = 0
+				}
+			case "k":
+				// Vim up
+				m.cursor--
+				if m.cursor < 0 {
+					m.cursor = len(m.divisions) - 1
+				}
 			}
 		}
 	}
@@ -121,7 +133,7 @@ func (m *DivisionModel) View() string {
 		s += fmt.Sprintf("%s %s\n", cursor, division)
 	}
 
-	s += "\n\nPress enter to select, esc/q to go back, ↑/↓ to navigate.\n"
+	s += "\n\nPress enter to select, esc/q to go back, ↑/↓ or j/k to navigate.\n"
 	return s
 }
 

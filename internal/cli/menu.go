@@ -66,6 +66,23 @@ func (m *MenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// TODO: Implement create tournament, view positions
 				return m, nil
 			}
+		case tea.KeyRunes:
+			switch string(msg.Runes) {
+			case "q":
+				return m, tea.Quit
+			case "j":
+				// Vim down
+				m.cursor++
+				if m.cursor >= len(m.choices) {
+					m.cursor = 0
+				}
+			case "k":
+				// Vim up
+				m.cursor--
+				if m.cursor < 0 {
+					m.cursor = len(m.choices) - 1
+				}
+			}
 		}
 	}
 	return m, nil
@@ -92,7 +109,7 @@ func (m *MenuModel) View() string {
 		s += fmt.Sprintf("%s %s\n", cursor, choice)
 	}
 
-	s += "\n\nPress q to quit, ↑/↓ to navigate, enter to select.\n"
+	s += "\n\nPress q/Ctrl+C to quit, ↑/↓ or j/k to navigate, enter to select.\n"
 	return s
 }
 
