@@ -4,7 +4,7 @@
 
 This project is a Go-based **TUI CLI tool** (`carca`) for creating and managing **Carcassonne tournaments** on [BoardGameArena](https://boardgamearena.com).
 
-- Tournaments are **1v1 matches**, **best-of-3**, **Swiss system**.
+- Tournaments are **1v1 matches**, **best-of-3**, **Swiss system**, 30 min matches (15 min per player).
 - Fixtures are stored in **CSV files under `./data/`** (one file per division).
 - The CLI uses the **Charm ecosystem** ([Bubble Tea](https://github.com/charmbracelet/bubbletea), [Lip Gloss](https://github.com/charmbracelet/lipgloss), etc.) for a pleasant, interactive user experience.
 - The tool automates tournament creation only when explicitly requested.
