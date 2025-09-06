@@ -15,11 +15,11 @@ import (
 
 // FixtureModel represents the fixture display TUI state
 type FixtureModel struct {
+	style         lipgloss.Style
 	division      *fixtures.Division
+	statusMessage string
 	currentRound  int
 	selectedMatch int
-	statusMessage string
-	style         lipgloss.Style
 }
 
 // NewFixtureModel creates a new fixture display model
@@ -52,24 +52,28 @@ func (m *FixtureModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.currentRound < 0 {
 				m.currentRound = len(m.division.Rounds) - 1
 			}
+
 			m.selectedMatch = 0
 		case tea.KeyRight:
 			m.currentRound++
 			if m.currentRound >= len(m.division.Rounds) {
 				m.currentRound = 0
 			}
+
 			m.selectedMatch = 0
 		case tea.KeyPgUp:
 			m.currentRound--
 			if m.currentRound < 0 {
 				m.currentRound = len(m.division.Rounds) - 1
 			}
+
 			m.selectedMatch = 0
 		case tea.KeyPgDown:
 			m.currentRound++
 			if m.currentRound >= len(m.division.Rounds) {
 				m.currentRound = 0
 			}
+
 			m.selectedMatch = 0
 		case tea.KeyEsc:
 			// Go back to division selection
@@ -107,6 +111,7 @@ func (m *FixtureModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					} else {
 						m.statusMessage = "Tournament link copied to clipboard!"
 					}
+
 					return m, tea.Batch(
 						tea.Tick(time.Second*3, func(time.Time) tea.Msg {
 							return clearStatusMsg{}
@@ -179,6 +184,7 @@ func (m *FixtureModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case clearStatusMsg:
 		m.statusMessage = ""
 	}
+
 	return m, nil
 }
 
@@ -252,8 +258,11 @@ func (m *FixtureModel) formatMatchesTable(matches []*fixtures.Match) string {
 
 	for i, match := range matches {
 		var playedStatus string
+
 		var result string
+
 		var datetime string
+
 		var tournamentID string
 
 		// Format played status
@@ -316,6 +325,7 @@ func (m *FixtureModel) calculateMaxPlayerNameWidth() int {
 			if len(match.HomePlayer) > maxWidth {
 				maxWidth = len(match.HomePlayer)
 			}
+
 			if len(match.AwayPlayer) > maxWidth {
 				maxWidth = len(match.AwayPlayer)
 			}
@@ -372,6 +382,7 @@ func (m *FixtureModel) extractTournamentID(bgaURL string) string {
 
 	// Extract the 'id' parameter from the query string
 	tournamentID := parsedURL.Query().Get("id")
+
 	return tournamentID
 }
 
@@ -380,5 +391,6 @@ func (m *FixtureModel) GetCurrentRound() *fixtures.Round {
 	if m.currentRound >= 0 && m.currentRound < len(m.division.Rounds) {
 		return m.division.Rounds[m.currentRound]
 	}
+
 	return nil
 }

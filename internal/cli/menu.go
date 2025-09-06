@@ -9,9 +9,9 @@ import (
 
 // MenuModel represents the main menu TUI state
 type MenuModel struct {
+	style   lipgloss.Style
 	choices []string
 	cursor  int
-	style   lipgloss.Style
 }
 
 // NewMenuModel creates a new menu model with default choices
@@ -85,6 +85,7 @@ func (m *MenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	}
+
 	return m, nil
 }
 
@@ -106,10 +107,12 @@ func (m *MenuModel) View() string {
 				Bold(true).
 				Render(choice)
 		}
+
 		s += fmt.Sprintf("%s %s\n", cursor, choice)
 	}
 
 	s += "\n\nPress q/Ctrl+C to quit, ↑/↓ or j/k to navigate, enter to select.\n"
+
 	return s
 }
 
@@ -118,5 +121,6 @@ func (m *MenuModel) GetSelectedChoice() string {
 	if m.cursor >= 0 && m.cursor < len(m.choices) {
 		return m.choices[m.cursor]
 	}
+
 	return ""
 }

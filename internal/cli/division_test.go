@@ -159,13 +159,13 @@ func TestDivisionModel_GetSelectedDivision(t *testing.T) {
 		cursor   int
 		expected string
 	}{
-		{0, "Elite"},
-		{1, "Platinum A"},
-		{2, "Platinum B"},
-		{3, "Oro A"},
-		{4, "Oro B"},
-		{5, "Oro C"},
-		{6, "Oro D"},
+		{cursor: 0, expected: "Elite"},
+		{cursor: 1, expected: "Platinum A"},
+		{cursor: 2, expected: "Platinum B"},
+		{cursor: 3, expected: "Oro A"},
+		{cursor: 4, expected: "Oro B"},
+		{cursor: 5, expected: "Oro C"},
+		{cursor: 6, expected: "Oro D"},
 	}
 
 	for _, tc := range testCases {
@@ -185,13 +185,13 @@ func TestDivisionModel_GetFilename(t *testing.T) {
 		cursor   int
 		expected string
 	}{
-		{0, "data/Liga Argentina - 1° Temporada - E-Fixture.csv"},
-		{1, "data/Liga Argentina - 1° Temporada - P.A-Fixture.csv"},
-		{2, "data/Liga Argentina - 1° Temporada - P.B-Fixture.csv"},
-		{3, "data/Liga Argentina - 1° Temporada - O.A-Fixture.csv"},
-		{4, "data/Liga Argentina - 1° Temporada - O.B-Fixture.csv"},
-		{5, "data/Liga Argentina - 1° Temporada - O.C-Fixture.csv"},
-		{6, "data/Liga Argentina - 1° Temporada - O.D-Fixture.csv"},
+		{cursor: 0, expected: "data/Liga Argentina - 1° Temporada - E-Fixture.csv"},
+		{cursor: 1, expected: "data/Liga Argentina - 1° Temporada - P.A-Fixture.csv"},
+		{cursor: 2, expected: "data/Liga Argentina - 1° Temporada - P.B-Fixture.csv"},
+		{cursor: 3, expected: "data/Liga Argentina - 1° Temporada - O.A-Fixture.csv"},
+		{cursor: 4, expected: "data/Liga Argentina - 1° Temporada - O.B-Fixture.csv"},
+		{cursor: 5, expected: "data/Liga Argentina - 1° Temporada - O.C-Fixture.csv"},
+		{cursor: 6, expected: "data/Liga Argentina - 1° Temporada - O.D-Fixture.csv"},
 	}
 
 	for _, tc := range testCases {

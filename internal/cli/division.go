@@ -18,10 +18,10 @@ type BackToMenuMsg struct{}
 
 // DivisionModel represents the division selection TUI state
 type DivisionModel struct {
+	style     lipgloss.Style
 	divisions []string
 	filenames []string
 	cursor    int
-	style     lipgloss.Style
 }
 
 // NewDivisionModel creates a new division selection model
@@ -109,6 +109,7 @@ func (m *DivisionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	}
+
 	return m, nil
 }
 
@@ -130,10 +131,12 @@ func (m *DivisionModel) View() string {
 				Bold(true).
 				Render(division)
 		}
+
 		s += fmt.Sprintf("%s %s\n", cursor, division)
 	}
 
 	s += "\n\nPress enter to select, esc/q to go back, ↑/↓ or j/k to navigate.\n"
+
 	return s
 }
 
@@ -142,6 +145,7 @@ func (m *DivisionModel) GetSelectedDivision() string {
 	if m.cursor >= 0 && m.cursor < len(m.divisions) {
 		return m.divisions[m.cursor]
 	}
+
 	return ""
 }
 
@@ -150,5 +154,6 @@ func (m *DivisionModel) GetSelectedFilename() string {
 	if m.cursor >= 0 && m.cursor < len(m.filenames) {
 		return m.filenames[m.cursor]
 	}
+
 	return ""
 }

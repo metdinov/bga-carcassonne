@@ -2,6 +2,7 @@ package cli
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+
 	"carca-cli/internal/fixtures"
 )
 
@@ -19,10 +20,10 @@ type ViewFixtureSelectMsg struct{}
 
 // AppModel coordinates navigation between different screens
 type AppModel struct {
-	currentScreen Screen
 	menuModel     *MenuModel
 	divisionModel *DivisionModel
 	fixtureModel  *FixtureModel
+	currentScreen Screen
 }
 
 // NewAppModel creates a new app coordinator model
@@ -40,12 +41,12 @@ func (m *AppModel) Init() tea.Cmd {
 
 // Update handles messages and manages screen transitions
 func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-
 	switch msg := msg.(type) {
 	case ViewFixtureSelectMsg:
 		// Transition from menu to division selection
 		m.currentScreen = ScreenDivisionSelect
 		m.divisionModel = NewDivisionModel()
+
 		return m, nil
 
 	case DivisionSelectMsg:
@@ -63,6 +64,7 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			m.fixtureModel = NewFixtureModel(division)
 		}
+
 		return m, nil
 
 	case BackToMenuMsg:
@@ -71,6 +73,7 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Clear other models to free memory
 		m.divisionModel = nil
 		m.fixtureModel = nil
+
 		return m, nil
 
 	default:
@@ -100,6 +103,7 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if divModel, ok := updatedModel.(*DivisionModel); ok {
 					m.divisionModel = divModel
 				}
+
 				return m, cmd
 			}
 
@@ -109,6 +113,7 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if fixModel, ok := updatedModel.(*FixtureModel); ok {
 					m.fixtureModel = fixModel
 				}
+
 				return m, cmd
 			}
 		}
@@ -124,18 +129,21 @@ func (m *AppModel) View() string {
 		if m.menuModel != nil {
 			return m.menuModel.View()
 		}
+
 		return "Loading menu...\n"
 
 	case ScreenDivisionSelect:
 		if m.divisionModel != nil {
 			return m.divisionModel.View()
 		}
+
 		return "Loading division selection...\n"
 
 	case ScreenFixture:
 		if m.fixtureModel != nil {
 			return m.fixtureModel.View()
 		}
+
 		return "Loading fixture data...\n\nPress esc/q to go back.\n"
 
 	default:

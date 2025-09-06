@@ -16,26 +16,27 @@ type Division struct {
 
 // Round represents a tournament round with multiple matches
 type Round struct {
-	Number    int
 	DateRange string
 	Matches   []*Match
+	Number    int
 }
 
 // Match represents a tournament match between two players
 type Match struct {
-	ID         int
 	HomePlayer string
-	HomeScore  int
-	AwayScore  int
 	AwayPlayer string
 	DateTime   string
 	BGALink    string
+	ID         int
+	HomeScore  int
+	AwayScore  int
 	Played     bool
 }
 
 // ParseMatch parses a CSV line into a Match struct
 func ParseMatch(csvLine string) (*Match, error) {
 	reader := csv.NewReader(strings.NewReader(csvLine))
+
 	records, err := reader.Read()
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse CSV line: %w", err)
@@ -85,6 +86,7 @@ func ParseRound(csvData string) (*Round, error) {
 
 	// Parse header line to extract round number and date range
 	headerReader := csv.NewReader(strings.NewReader(lines[0]))
+
 	headerRecord, err := headerReader.Read()
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse round header: %w", err)
@@ -96,6 +98,7 @@ func ParseRound(csvData string) (*Round, error) {
 
 	// Extract round number from "Fecha X" format
 	roundNumber := 1
+
 	if len(headerRecord[1]) > 6 && strings.HasPrefix(headerRecord[1], "Fecha ") {
 		if num, err := strconv.Atoi(strings.TrimSpace(headerRecord[1][6:])); err == nil {
 			roundNumber = num
@@ -121,6 +124,7 @@ func ParseRound(csvData string) (*Round, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse match on line %d: %w", i+1, err)
 		}
+
 		round.Matches = append(round.Matches, match)
 	}
 
@@ -144,10 +148,12 @@ func ParseDivision(csvData string) (*Division, error) {
 			// If we have accumulated lines for a previous round, process them
 			if len(currentRoundLines) > 0 {
 				roundData := strings.Join(currentRoundLines, "\n")
+
 				round, err := ParseRound(roundData)
 				if err != nil {
 					return nil, fmt.Errorf("failed to parse round: %w", err)
 				}
+
 				division.Rounds = append(division.Rounds, round)
 				currentRoundLines = nil
 			}
@@ -165,10 +171,12 @@ func ParseDivision(csvData string) (*Division, error) {
 	// Process the last round if it exists
 	if len(currentRoundLines) > 0 {
 		roundData := strings.Join(currentRoundLines, "\n")
+
 		round, err := ParseRound(roundData)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse final round: %w", err)
 		}
+
 		division.Rounds = append(division.Rounds, round)
 	}
 
@@ -235,6 +243,7 @@ func DemoParseFixtures(filename string) error {
 
 	for _, round := range division.Rounds {
 		totalMatches += len(round.Matches)
+
 		for _, match := range round.Matches {
 			if match.Played {
 				playedMatches++
@@ -251,11 +260,13 @@ func DemoParseFixtures(filename string) error {
 	unplayed := GetUnplayedMatches(division)
 	if len(unplayed) > 0 {
 		fmt.Printf("\nMatches needing tournaments:\n")
+
 		for i, match := range unplayed {
 			if i >= 5 { // Show only first 5
 				fmt.Printf("... and %d more\n", len(unplayed)-5)
 				break
 			}
+
 			fmt.Printf("  Match %d: %s vs %s (Round %d)\n",
 				match.ID, match.HomePlayer, match.AwayPlayer, getRoundNumber(division, match))
 		}
@@ -273,5 +284,6 @@ func getRoundNumber(division *Division, targetMatch *Match) int {
 			}
 		}
 	}
+
 	return 0
 }

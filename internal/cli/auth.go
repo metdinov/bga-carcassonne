@@ -25,6 +25,7 @@ func GetBGACredentials() (string, string, error) {
 		if user == "" {
 			user = envUser
 		}
+
 		if pass == "" {
 			pass = envPass
 		}
@@ -46,6 +47,7 @@ func loadFromEnvFile() (string, string, error) {
 	defer file.Close()
 
 	var user, pass string
+
 	scanner := bufio.NewScanner(file)
 
 	for scanner.Scan() {
@@ -81,6 +83,7 @@ func loadFromEnvFile() (string, string, error) {
 // If the file exists, it updates the BGA credentials while preserving other variables
 func SaveCredentialsToEnv(user, pass string) error {
 	var lines []string
+
 	var foundUser, foundPass bool
 
 	// Read existing .env file if it exists
@@ -112,6 +115,7 @@ func SaveCredentialsToEnv(user, pass string) error {
 	if !foundUser {
 		lines = append(lines, fmt.Sprintf("BGA_USER=%s", user))
 	}
+
 	if !foundPass {
 		lines = append(lines, fmt.Sprintf("BGA_PASS=%s", pass))
 	}

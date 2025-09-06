@@ -154,10 +154,10 @@ func TestMenuModel_GetSelectedChoice(t *testing.T) {
 		cursor   int
 		expected string
 	}{
-		{0, "Create Tournament"},
-		{1, "View Fixture"},
-		{2, "View Positions"},
-		{3, "Exit"},
+		{cursor: 0, expected: "Create Tournament"},
+		{cursor: 1, expected: "View Fixture"},
+		{cursor: 2, expected: "View Positions"},
+		{cursor: 3, expected: "Exit"},
 	}
 
 	for _, tc := range testCases {
