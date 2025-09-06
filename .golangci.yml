@@ -1,0 +1,169 @@
+# golangci-lint configuration for Carcassonne Tournament Manager
+# Fast and Physical linting configuration
+
+run:
+  timeout: 5m
+  tests: true
+  modules-download-mode: readonly
+
+output:
+  formats:
+    - format: colored-line-number
+      path: stdout
+  print-issued-lines: true
+  print-linter-name: true
+
+linters:
+  enable:
+    - errcheck # Check for unchecked errors
+    - gosimple # Simplify code
+    - govet # Go vet examines Go source code
+    - ineffassign # Detect ineffectual assignments
+    - staticcheck # Staticcheck is a go vet on steroids
+    - typecheck # Parse and type-check Go code
+    - unused # Check for unused constants, variables, functions and types
+    - gofmt # Check if code was gofmt-ed
+    - goimports # Check import formatting
+    - misspell # Find commonly misspelled English words
+    - gocritic # Most opinionated Go source code linter
+    - revive # Fast, configurable, extensible, flexible linter for Go
+    - gosec # Security-focused linter
+    - nolintlint # Ill-formed or insufficient nolint directives
+    - whitespace # Whitespace linter
+    - godot # Check if comments end in a period
+    - gocyclo # Computes and checks the cyclomatic complexity
+    - funlen # Tool for detection of long functions
+    - lll # Reports long lines
+
+  disable:
+    - exhaustive # Too strict for switches
+    - forcetypeassert # We handle type assertions carefully
+    - nlreturn # Too opinionated about newlines
+    - wrapcheck # Too strict about error wrapping
+    - gocognit # TUI Update methods are complex by nature
+    - nestif # TUI logic requires nested conditionals
+    - wsl # Too opinionated for TUI code
+    - dupl # Similar TUI patterns are expected
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+  govet:
+    shadow: true
+    enable-all: true
+
+  gofmt:
+    simplify: true
+
+  goimports:
+    local-prefixes: carca-cli
+
+  misspell:
+    locale: US
+
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    disabled-checks:
+      - dupImport
+      - ifElseChain
+      - octalLiteral
+      - whyNoLint
+      - importShadow
+
+  revive:
+    min-confidence: 0
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unused-parameter
+      - name: unreachable-code
+      - name: redefines-builtin-id
+
+  gosec:
+    excludes:
+      - G204 # Subprocess launched with variable - we need this for BGA integration
+      - G304 # File path provided as taint input - we control the CSV file paths
+      - G306 # Poor file permissions - .env files can be 0644
+
+  funlen:
+    lines: 100
+    statements: 50
+
+  gocyclo:
+    min-complexity: 20
+
+  gocognit:
+    min-complexity: 20
+
+  nestif:
+    min-complexity: 4
+
+  lll:
+    line-length: 120
+
+  whitespace:
+    multi-if: false
+    multi-func: false
+
+issues:
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+        - funlen
+        - lll
+        - ineffassign
+
+    # Exclude godot from function comments (we use action-oriented comments)
+    - source: "^// [A-Z][a-z]+ [a-z]+"
+      linters:
+        - godot
+
+    # Allow long lines in generated code and test data
+    - path: (.*_test\.go|.*\.pb\.go)
+      linters:
+        - lll
+
+  exclude:
+    # Allow "Fast and Physical" comments without periods
+    - "comment on exported .* should be of the form"
+    # Allow unused parameters in TUI interfaces
+    - "parameter .* seems to be unused"
+    # Allow single case switches in TUI message handling
+    - "should rewrite switch statement to if statement"
+
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+severity:
+  default-severity: error
+  case-sensitive: false
