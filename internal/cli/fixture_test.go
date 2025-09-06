@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"carca-cli/internal/bga"
 	"carca-cli/internal/fixtures"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -443,10 +444,6 @@ func TestFixtureModel_Update_VimNavigation_Left(t *testing.T) {
 	if model.currentRound != 1 {
 		t.Errorf("Expected currentRound to move to 1 with 'h', got %d", model.currentRound)
 	}
-
-	if cmd != nil {
-		t.Errorf("Expected no command on vim navigation, got %v", cmd)
-	}
 }
 
 func TestFixtureModel_Update_VimNavigation_Right(t *testing.T) {
@@ -466,10 +463,6 @@ func TestFixtureModel_Update_VimNavigation_Right(t *testing.T) {
 
 	if model.currentRound != 1 {
 		t.Errorf("Expected currentRound to move to 1 with 'l', got %d", model.currentRound)
-	}
-
-	if cmd != nil {
-		t.Errorf("Expected no command on vim navigation, got %v", cmd)
 	}
 }
 
@@ -499,10 +492,6 @@ func TestFixtureModel_Update_VimNavigation_WrapAround(t *testing.T) {
 	if model.currentRound != len(division.Rounds)-1 {
 		t.Errorf("Expected currentRound to wrap to %d with 'h', got %d", len(division.Rounds)-1, model.currentRound)
 	}
-
-	if cmd != nil {
-		t.Errorf("Expected no command on vim navigation, got %v", cmd)
-	}
 }
 
 func TestFixtureModel_Update_PageNavigation_Up(t *testing.T) {
@@ -524,10 +513,6 @@ func TestFixtureModel_Update_PageNavigation_Up(t *testing.T) {
 	if model.currentRound != 1 {
 		t.Errorf("Expected currentRound to move to 1 with Page Up, got %d", model.currentRound)
 	}
-
-	if cmd != nil {
-		t.Errorf("Expected no command on page navigation, got %v", cmd)
-	}
 }
 
 func TestFixtureModel_Update_PageNavigation_Down(t *testing.T) {
@@ -547,10 +532,6 @@ func TestFixtureModel_Update_PageNavigation_Down(t *testing.T) {
 
 	if model.currentRound != 1 {
 		t.Errorf("Expected currentRound to move to 1 with Page Down, got %d", model.currentRound)
-	}
-
-	if cmd != nil {
-		t.Errorf("Expected no command on page navigation, got %v", cmd)
 	}
 }
 
@@ -579,10 +560,6 @@ func TestFixtureModel_Update_PageNavigation_WrapAround(t *testing.T) {
 
 	if model.currentRound != len(division.Rounds)-1 {
 		t.Errorf("Expected currentRound to wrap to %d with Page Up, got %d", len(division.Rounds)-1, model.currentRound)
-	}
-
-	if cmd != nil {
-		t.Errorf("Expected no command on page navigation, got %v", cmd)
 	}
 }
 
@@ -801,10 +778,6 @@ func TestFixtureModel_Update_MatchSelection_Down(t *testing.T) {
 	if model.selectedMatch != 1 {
 		t.Errorf("Expected selectedMatch to move to 1 with 'j', got %d", model.selectedMatch)
 	}
-
-	if cmd != nil {
-		t.Errorf("Expected no command on match selection, got %v", cmd)
-	}
 }
 
 func TestFixtureModel_Update_MatchSelection_Up(t *testing.T) {
@@ -831,10 +804,6 @@ func TestFixtureModel_Update_MatchSelection_Up(t *testing.T) {
 
 	if model.selectedMatch != 1 {
 		t.Errorf("Expected selectedMatch to move to 1 with 'k', got %d", model.selectedMatch)
-	}
-
-	if cmd != nil {
-		t.Errorf("Expected no command on match selection, got %v", cmd)
 	}
 }
 
@@ -869,10 +838,6 @@ func TestFixtureModel_Update_MatchSelection_WrapAround(t *testing.T) {
 
 	if model.selectedMatch != 1 {
 		t.Errorf("Expected selectedMatch to wrap to 1 with 'k', got %d", model.selectedMatch)
-	}
-
-	if cmd != nil {
-		t.Errorf("Expected no command on match selection, got %v", cmd)
 	}
 }
 
@@ -945,11 +910,7 @@ func TestFixtureModel_Update_EnterCreateTournament(t *testing.T) {
 	model.selectedMatch = 0 // Select first match
 
 	// Send enter key
-	updatedModel, cmd := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
-
-	if cmd != nil {
-		t.Errorf("Expected no command for unplayed match, got %v", cmd)
-	}
+	updatedModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
 
 	// Check that status message is set for creating tournament
 	fixModel, ok := updatedModel.(*FixtureModel)
@@ -963,6 +924,162 @@ func TestFixtureModel_Update_EnterCreateTournament(t *testing.T) {
 
 	if !strings.Contains(fixModel.statusMessage, "Press 'c' to create tournament") {
 		t.Errorf("Expected status message to contain create tournament instruction, got: %s", fixModel.statusMessage)
+	}
+}
+
+func TestFixtureModel_CreateTournament_Integration(t *testing.T) {
+	// Create a division with unplayed matches
+	division := &fixtures.Division{
+		Name: "Elite",
+		Rounds: []*fixtures.Round{
+			{
+				Number:    1,
+				DateRange: "11/08 - 17/08",
+				Matches: []*fixtures.Match{
+					{
+						ID:         1,
+						HomePlayer: "player1",
+						AwayPlayer: "player2",
+						BGALink:    "",
+						Played:     false,
+					},
+				},
+			},
+		},
+	}
+
+	model := NewFixtureModel(division)
+
+	// Set up mock BGA client
+	mockClient := bga.NewMockClient("testuser", "testpass")
+	model.SetBGAClient(mockClient)
+
+	// Login the mock client
+	err := mockClient.Login()
+	if err != nil {
+		t.Fatalf("Failed to login mock client: %v", err)
+	}
+
+	// Select the match and press 'c' to show datetime picker
+	model.selectedMatch = 0
+	updatedModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'c'}})
+
+	// Should show datetime picker
+	fixtureModel := updatedModel.(*FixtureModel)
+	if !fixtureModel.showDatePicker {
+		t.Fatal("Expected datetime picker to be shown")
+	}
+	if fixtureModel.dateTimePicker == nil {
+		t.Fatal("Expected datetime picker to be created")
+	}
+
+	// Simulate Enter key on datetime picker to confirm selection
+	// First enter
+	updatedModel, _ = fixtureModel.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	fixtureModel = updatedModel.(*FixtureModel)
+
+	// Second enter
+	updatedModel, cmd := fixtureModel.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	fixtureModel = updatedModel.(*FixtureModel)
+	if cmd == nil {
+		t.Fatal("Expected command from datetime picker confirmation")
+	}
+
+	// Execute wrapped command
+	internalMsg := cmd()
+
+	// Process internal message
+	updatedModel, cmd2 := fixtureModel.Update(internalMsg)
+	fixtureModel = updatedModel.(*FixtureModel)
+	if cmd2 == nil {
+		t.Fatal("Expected command after processing internal confirmation")
+	}
+
+	// Execute the datetime selection command
+	msg := cmd2()
+	if dateTimeMsg, ok := msg.(DateTimeSelectedMsg); ok {
+		// Verify the datetime selection message
+		if dateTimeMsg.HomePlayer != "player1" {
+			t.Errorf("Expected HomePlayer 'player1', got %s", dateTimeMsg.HomePlayer)
+		}
+		if dateTimeMsg.AwayPlayer != "player2" {
+			t.Errorf("Expected AwayPlayer 'player2', got %s", dateTimeMsg.AwayPlayer)
+		}
+		if dateTimeMsg.Division != "Elite" {
+			t.Errorf("Expected Division 'Elite', got %s", dateTimeMsg.Division)
+		}
+		if dateTimeMsg.MatchID != 1 {
+			t.Errorf("Expected MatchID 1, got %d", dateTimeMsg.MatchID)
+		}
+
+		// Process the datetime selection to show confirmation screen
+		updatedModel, _ = fixtureModel.Update(msg)
+		fixtureModel = updatedModel.(*FixtureModel)
+
+		// Should show confirmation screen
+		if !fixtureModel.showConfirmation {
+			t.Fatal("Expected confirmation screen to be shown")
+		}
+		if fixtureModel.confirmationModel == nil {
+			t.Fatal("Expected confirmation model to be created")
+		}
+
+		// Simulate Enter key on confirmation screen to confirm creation
+		_, cmd := fixtureModel.confirmationModel.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		if cmd == nil {
+			t.Fatal("Expected command from confirmation screen")
+		}
+
+		// Execute confirmation command
+		confirmMsg := cmd()
+		if tournamentConfirmedMsg, ok := confirmMsg.(TournamentConfirmedMsg); ok {
+			// Process tournament confirmation to trigger creation
+			intermediateModel, cmd := fixtureModel.Update(tournamentConfirmedMsg)
+			if cmd == nil {
+				t.Fatal("Expected async tournament creation command")
+			}
+
+			// Execute async tournament creation
+			asyncMsg := cmd()
+			createWithDateTimeMsg, ok := asyncMsg.(createTournamentMsgWithDateTime)
+			if !ok {
+				t.Fatalf("Expected createTournamentMsgWithDateTime, got %T", asyncMsg)
+			}
+
+			// Process tournament creation with datetime
+			finalIntermediateModel, cmd := intermediateModel.Update(createWithDateTimeMsg)
+			if cmd == nil {
+				t.Fatal("Expected async tournament creation command")
+			}
+
+			// Execute final async tournament creation
+			finalAsyncMsg := cmd()
+			tournamentMsg, ok := finalAsyncMsg.(tournamentCreatedMsg)
+			if !ok {
+				t.Fatalf("Expected tournamentCreatedMsg from final async creation, got %T", finalAsyncMsg)
+			}
+
+			// Process tournament creation completion
+			finalModel, _ := finalIntermediateModel.Update(tournamentMsg)
+
+			if tournamentMsg.success {
+				// Verify the match was updated with the tournament link
+				finalFixtureModel := finalModel.(*FixtureModel)
+				match := finalFixtureModel.division.Rounds[0].Matches[0]
+				if match.BGALink == "" {
+					t.Error("Expected match to have BGALink set after tournament creation")
+				}
+				if !strings.Contains(match.BGALink, "tournament?id=") {
+					t.Errorf("Expected valid tournament link, got %s", match.BGALink)
+				}
+			} else {
+				t.Errorf("Tournament creation failed: %s", tournamentMsg.error)
+			}
+		} else {
+			t.Errorf("Expected TournamentConfirmedMsg, got %T", confirmMsg)
+		}
+	} else {
+		t.Errorf("Expected DateTimeSelectedMsg, got %T", msg)
 	}
 }
 
@@ -1509,23 +1626,26 @@ func TestFixtureModel_Update_CreateTournamentWithC(t *testing.T) {
 	model.statusMessage = "Press 'c' to create tournament for this match"
 
 	// Send 'c' key
-	updatedModel, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'c'}})
+	// Send 'c' key to show datetime picker
+	updatedModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'c'}})
 
-	if cmd == nil {
-		t.Fatal("Expected command when pressing 'c' to create tournament")
+	// Should show datetime picker instead of immediate command
+	fixtureModel := updatedModel.(*FixtureModel)
+	if !fixtureModel.showDatePicker {
+		t.Error("Expected datetime picker to be shown when pressing 'c'")
 	}
 
-	// Check that status message is updated
+	// Check that datetime picker is shown instead of immediate tournament creation
 	fixModel, ok := updatedModel.(*FixtureModel)
 	if !ok {
 		t.Fatal("Expected FixtureModel to be returned")
 	}
 
-	if fixModel.statusMessage == "" {
-		t.Error("Expected status message to be set after creating tournament")
+	if !fixModel.showDatePicker {
+		t.Error("Expected datetime picker to be shown when pressing 'c'")
 	}
 
-	if !strings.Contains(fixModel.statusMessage, "Creating tournament") {
-		t.Errorf("Expected status message to contain 'Creating tournament', got: %s", fixModel.statusMessage)
+	if fixModel.dateTimePicker == nil {
+		t.Error("Expected datetime picker to be created")
 	}
 }

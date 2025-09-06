@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"time"
 
+	"carca-cli/internal/bga"
 	"carca-cli/internal/fixtures"
 
 	"github.com/atotto/clipboard"
@@ -15,11 +16,16 @@ import (
 
 // FixtureModel represents the fixture display TUI state
 type FixtureModel struct {
-	style         lipgloss.Style
-	division      *fixtures.Division
-	statusMessage string
-	currentRound  int
-	selectedMatch int
+	division          *fixtures.Division
+	bgaClient         bga.APIClient
+	dateTimePicker    *DateTimePickerModel
+	confirmationModel *TournamentConfirmationModel
+	style             lipgloss.Style
+	statusMessage     string
+	currentRound      int
+	selectedMatch     int
+	showDatePicker    bool
+	showConfirmation  bool
 }
 
 // NewFixtureModel creates a new fixture display model
@@ -40,149 +46,74 @@ func (m *FixtureModel) Init() tea.Cmd {
 	return nil
 }
 
+// SetBGAClient sets the BGA client for the fixture model
+func (m *FixtureModel) SetBGAClient(client bga.APIClient) {
+	m.bgaClient = client
+}
+
 // Update handles messages and updates the model state
 func (m *FixtureModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// Handle sub-model messages first
+	if model, cmd, handled := m.handleSubModelMessages(msg); handled {
+		return model, cmd
+	}
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.Type {
-		case tea.KeyCtrlC:
-			return m, tea.Quit
-		case tea.KeyLeft:
-			m.currentRound--
-			if m.currentRound < 0 {
-				m.currentRound = len(m.division.Rounds) - 1
-			}
-
-			m.selectedMatch = 0
-		case tea.KeyRight:
-			m.currentRound++
-			if m.currentRound >= len(m.division.Rounds) {
-				m.currentRound = 0
-			}
-
-			m.selectedMatch = 0
-		case tea.KeyPgUp:
-			m.currentRound--
-			if m.currentRound < 0 {
-				m.currentRound = len(m.division.Rounds) - 1
-			}
-
-			m.selectedMatch = 0
-		case tea.KeyPgDown:
-			m.currentRound++
-			if m.currentRound >= len(m.division.Rounds) {
-				m.currentRound = 0
-			}
-
-			m.selectedMatch = 0
-		case tea.KeyEsc:
-			// Go back to division selection
-			return m, func() tea.Msg {
-				return BackToMenuMsg{}
-			}
-		case tea.KeyDown:
-			// Match selection down
-			currentRound := m.GetCurrentRound()
-			if currentRound != nil && len(currentRound.Matches) > 0 {
-				m.selectedMatch++
-				if m.selectedMatch >= len(currentRound.Matches) {
-					m.selectedMatch = 0
-				}
-			}
-		case tea.KeyUp:
-			// Match selection up
-			currentRound := m.GetCurrentRound()
-			if currentRound != nil && len(currentRound.Matches) > 0 {
-				m.selectedMatch--
-				if m.selectedMatch < 0 {
-					m.selectedMatch = len(currentRound.Matches) - 1
-				}
-			}
-		case tea.KeyEnter:
-			// Handle match selection
-			currentRound := m.GetCurrentRound()
-			if currentRound != nil && m.selectedMatch < len(currentRound.Matches) {
-				selectedMatch := currentRound.Matches[m.selectedMatch]
-				if selectedMatch.Played && selectedMatch.BGALink != "" {
-					// Copy link to clipboard
-					err := clipboard.WriteAll(selectedMatch.BGALink)
-					if err != nil {
-						m.statusMessage = "Failed to copy link to clipboard"
-					} else {
-						m.statusMessage = "Tournament link copied to clipboard!"
-					}
-
-					return m, tea.Batch(
-						tea.Tick(time.Second*3, func(time.Time) tea.Msg {
-							return clearStatusMsg{}
-						}),
-					)
-				} else {
-					// Match not played, show create tournament message
-					m.statusMessage = "Press 'c' to create tournament for this match"
-				}
-			}
-		case tea.KeyRunes:
-			switch string(msg.Runes) {
-			case "q":
-				// Go back to division selection
-				return m, func() tea.Msg {
-					return BackToMenuMsg{}
-				}
-			case "h":
-				// Vim left
-				m.currentRound--
-				if m.currentRound < 0 {
-					m.currentRound = len(m.division.Rounds) - 1
-				}
-				// Reset match selection when changing rounds
-				m.selectedMatch = 0
-			case "l":
-				// Vim right
-				m.currentRound++
-				if m.currentRound >= len(m.division.Rounds) {
-					m.currentRound = 0
-				}
-				// Reset match selection when changing rounds
-				m.selectedMatch = 0
-			case "j":
-				// Vim down for match selection
-				currentRound := m.GetCurrentRound()
-				if currentRound != nil && len(currentRound.Matches) > 0 {
-					m.selectedMatch++
-					if m.selectedMatch >= len(currentRound.Matches) {
-						m.selectedMatch = 0
-					}
-				}
-			case "k":
-				// Vim up for match selection
-				currentRound := m.GetCurrentRound()
-				if currentRound != nil && len(currentRound.Matches) > 0 {
-					m.selectedMatch--
-					if m.selectedMatch < 0 {
-						m.selectedMatch = len(currentRound.Matches) - 1
-					}
-				}
-			case "c":
-				// Create tournament for selected unplayed match
-				currentRound := m.GetCurrentRound()
-				if currentRound != nil && m.selectedMatch < len(currentRound.Matches) {
-					selectedMatch := currentRound.Matches[m.selectedMatch]
-					if !selectedMatch.Played {
-						m.statusMessage = fmt.Sprintf("Creating tournament for %s vs %s...",
-							selectedMatch.HomePlayer, selectedMatch.AwayPlayer)
-						// TODO: Implement BGA tournament creation
-						return m, tea.Batch(
-							tea.Tick(time.Second*3, func(time.Time) tea.Msg {
-								return clearStatusMsg{}
-							}),
-						)
-					}
-				}
-			}
-		}
+		return m.handleKeyMessages(msg)
 	case clearStatusMsg:
 		m.statusMessage = ""
+	case createTournamentMsg:
+		return m.handleCreateTournamentResponse(msg)
+	case createTournamentMsgWithDateTime:
+		return m.handleCreateTournamentWithDateTime(&msg)
+	case tournamentCreatedMsg:
+		return m.handleTournamentCreated(msg)
+	case DateTimeSelectedMsg:
+		// DateTime selected, show confirmation screen
+		m.showDatePicker = false
+		m.confirmationModel = NewTournamentConfirmationModel(
+			msg.HomePlayer,
+			msg.AwayPlayer,
+			msg.Division,
+			msg.RoundNumber,
+			msg.MatchNumber,
+			msg.MatchID,
+			msg.DateTime,
+		)
+		m.showConfirmation = true
+		return m, nil
+	case DateTimePickerCanceledMsg:
+		// DateTime picker canceled
+		m.showDatePicker = false
+		m.statusMessage = "Tournament creation canceled"
+		return m, tea.Tick(time.Second*2, func(time.Time) tea.Msg {
+			return clearStatusMsg{}
+		})
+	case TournamentConfirmedMsg:
+		// Confirmation received, proceed with tournament creation
+		m.showConfirmation = false
+		m.statusMessage = fmt.Sprintf("Creating tournament for %s vs %s...",
+			msg.HomePlayer, msg.AwayPlayer)
+
+		return m, tea.Cmd(func() tea.Msg {
+			return createTournamentMsgWithDateTime{
+				homePlayer:  msg.HomePlayer,
+				awayPlayer:  msg.AwayPlayer,
+				matchID:     msg.MatchID,
+				roundNum:    msg.RoundNumber - 1, // Convert back to 0-based
+				dateTime:    msg.DateTime,
+				division:    msg.Division,
+				matchNumber: msg.MatchNumber,
+			}
+		})
+	case TournamentConfirmationCanceledMsg:
+		// Tournament confirmation canceled
+		m.showConfirmation = false
+		m.statusMessage = "Tournament creation canceled"
+		return m, tea.Tick(time.Second*2, func(time.Time) tea.Msg {
+			return clearStatusMsg{}
+		})
 	}
 
 	return m, nil
@@ -191,8 +122,218 @@ func (m *FixtureModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // clearStatusMsg is sent to clear the status message after a delay
 type clearStatusMsg struct{}
 
+// createTournamentMsg is sent to initiate tournament creation
+type createTournamentMsg struct {
+	homePlayer string
+	awayPlayer string
+	matchID    int
+	roundNum   int
+}
+
+// createTournamentMsgWithDateTime is sent to initiate tournament creation with datetime
+type createTournamentMsgWithDateTime struct {
+	dateTime    time.Time
+	homePlayer  string
+	awayPlayer  string
+	division    string
+	matchID     int
+	roundNum    int
+	matchNumber int
+}
+
+// tournamentCreatedMsg is sent when tournament creation completes
+type tournamentCreatedMsg struct {
+	link         string
+	error        string
+	tournamentID int
+	matchID      int
+	roundNum     int
+	success      bool
+}
+
+// handleCreateTournamentResponse handles the tournament creation request
+func (m *FixtureModel) handleCreateTournamentResponse(msg createTournamentMsg) (tea.Model, tea.Cmd) {
+	return m, tea.Cmd(func() tea.Msg {
+		if !m.bgaClient.IsAuthenticated() {
+			// Get credentials and login
+			username, password, err := GetOrPromptCredentials(false)
+			if err != nil {
+				return tournamentCreatedMsg{
+					success:  false,
+					error:    fmt.Sprintf("Failed to get credentials: %v", err),
+					matchID:  msg.matchID,
+					roundNum: msg.roundNum,
+				}
+			}
+
+			// Create new client with credentials
+			if mockClient, ok := m.bgaClient.(*bga.MockClient); ok {
+				// For testing, reset the mock client with new credentials
+				*mockClient = *bga.NewMockClient(username, password)
+			} else {
+				m.bgaClient = bga.NewClient(username, password)
+			}
+
+			err = m.bgaClient.Login()
+			if err != nil {
+				return tournamentCreatedMsg{
+					success:  false,
+					error:    fmt.Sprintf("Login failed: %v", err),
+					matchID:  msg.matchID,
+					roundNum: msg.roundNum,
+				}
+			}
+		}
+
+		// Create tournament with division and match information (default scheduling)
+		resp, err := m.bgaClient.CreateSwissTournament(
+			m.division.Name,
+			msg.homePlayer,
+			msg.awayPlayer,
+			msg.roundNum+1,
+			msg.matchID,
+		)
+
+		if err != nil {
+			return tournamentCreatedMsg{
+				success:  false,
+				error:    fmt.Sprintf("Tournament creation failed: %v", err),
+				matchID:  msg.matchID,
+				roundNum: msg.roundNum,
+			}
+		}
+
+		if !resp.Success {
+			return tournamentCreatedMsg{
+				success:  false,
+				error:    resp.Error,
+				matchID:  msg.matchID,
+				roundNum: msg.roundNum,
+			}
+		}
+
+		return tournamentCreatedMsg{
+			success:      true,
+			tournamentID: resp.TournamentID,
+			link:         resp.Link,
+			matchID:      msg.matchID,
+			roundNum:     msg.roundNum,
+		}
+	})
+}
+
+// handleTournamentCreated handles the tournament creation completion
+func (m *FixtureModel) handleTournamentCreated(msg tournamentCreatedMsg) (tea.Model, tea.Cmd) {
+	if !msg.success {
+		m.statusMessage = fmt.Sprintf("Tournament creation failed: %s", msg.error)
+	} else {
+		// Update the match with the tournament link
+		if msg.roundNum < len(m.division.Rounds) {
+			round := m.division.Rounds[msg.roundNum]
+			for i, match := range round.Matches {
+				if match.ID == msg.matchID {
+					round.Matches[i].BGALink = msg.link
+					break
+				}
+			}
+		}
+
+		m.statusMessage = "Tournament created successfully! Link copied to clipboard."
+
+		// Copy link to clipboard
+		if err := clipboard.WriteAll(msg.link); err != nil {
+			m.statusMessage = "Tournament created successfully! (Failed to copy link to clipboard)"
+		}
+	}
+
+	return m, tea.Tick(time.Second*3, func(time.Time) tea.Msg {
+		return clearStatusMsg{}
+	})
+}
+
+// handleCreateTournamentWithDateTime handles tournament creation with specific datetime
+func (m *FixtureModel) handleCreateTournamentWithDateTime(msg *createTournamentMsgWithDateTime) (tea.Model, tea.Cmd) {
+	return m, tea.Cmd(func() tea.Msg {
+		if !m.bgaClient.IsAuthenticated() {
+			// Get credentials and login
+			username, password, err := GetOrPromptCredentials(false)
+			if err != nil {
+				return tournamentCreatedMsg{
+					success:  false,
+					error:    fmt.Sprintf("Failed to get credentials: %v", err),
+					matchID:  msg.matchID,
+					roundNum: msg.roundNum,
+				}
+			}
+
+			// Create new client with credentials
+			if mockClient, ok := m.bgaClient.(*bga.MockClient); ok {
+				// For testing, reset the mock client with new credentials
+				*mockClient = *bga.NewMockClient(username, password)
+			} else {
+				m.bgaClient = bga.NewClient(username, password)
+			}
+
+			err = m.bgaClient.Login()
+			if err != nil {
+				return tournamentCreatedMsg{
+					success:  false,
+					error:    fmt.Sprintf("Login failed: %v", err),
+					matchID:  msg.matchID,
+					roundNum: msg.roundNum,
+				}
+			}
+		}
+
+		// Create tournament with specified datetime
+		resp, err := m.bgaClient.CreateSwissTournamentWithDateTime(
+			msg.division,
+			msg.homePlayer,
+			msg.awayPlayer,
+			msg.roundNum+1,
+			msg.matchNumber,
+			msg.dateTime,
+		)
+
+		if err != nil {
+			return tournamentCreatedMsg{
+				success:  false,
+				error:    fmt.Sprintf("Tournament creation failed: %v", err),
+				matchID:  msg.matchID,
+				roundNum: msg.roundNum,
+			}
+		}
+
+		if !resp.Success {
+			return tournamentCreatedMsg{
+				success:  false,
+				error:    resp.Error,
+				matchID:  msg.matchID,
+				roundNum: msg.roundNum,
+			}
+		}
+
+		return tournamentCreatedMsg{
+			success:      true,
+			tournamentID: resp.TournamentID,
+			link:         resp.Link,
+			matchID:      msg.matchID,
+			roundNum:     msg.roundNum,
+		}
+	})
+}
+
 // View renders the current state of the fixture display
 func (m *FixtureModel) View() string {
+	// Show confirmation screen if active
+	if m.showConfirmation && m.confirmationModel != nil {
+		return m.confirmationModel.View()
+	}
+
+	// Show datetime picker if active
+	if m.showDatePicker && m.dateTimePicker != nil {
+		return m.dateTimePicker.View()
+	}
 	if len(m.division.Rounds) == 0 {
 		return "No fixtures available for this division.\n\nPress esc/q to go back.\n"
 	}
@@ -393,4 +534,154 @@ func (m *FixtureModel) GetCurrentRound() *fixtures.Round {
 	}
 
 	return nil
+}
+
+// handleSubModelMessages handles messages for date picker and confirmation models
+func (m *FixtureModel) handleSubModelMessages(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
+	if m.showDatePicker && m.dateTimePicker != nil {
+		switch msg.(type) {
+		case DateTimeSelectedMsg, DateTimePickerCanceledMsg:
+			// These are for the FixtureModel, so let them fall through.
+			return m, nil, false
+		default:
+			// All other messages go to the date picker.
+			updatedPicker, cmd := m.dateTimePicker.Update(msg)
+			if picker, ok := updatedPicker.(*DateTimePickerModel); ok {
+				m.dateTimePicker = picker
+			}
+			return m, cmd, true
+		}
+	}
+
+	if m.showConfirmation && m.confirmationModel != nil {
+		switch msg.(type) {
+		case TournamentConfirmedMsg, TournamentConfirmationCanceledMsg:
+			// These are for the FixtureModel.
+			return m, nil, false
+		default:
+			updatedConfirmation, cmd := m.confirmationModel.Update(msg)
+			if confirmation, ok := updatedConfirmation.(*TournamentConfirmationModel); ok {
+				m.confirmationModel = confirmation
+			}
+			return m, cmd, true
+		}
+	}
+
+	return m, nil, false
+}
+
+// handleKeyMessages handles all keyboard input
+func (m *FixtureModel) handleKeyMessages(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.Type {
+	case tea.KeyCtrlC:
+		return m, tea.Quit
+	case tea.KeyLeft, tea.KeyPgUp:
+		return m.handleRoundNavigation(-1), nil
+	case tea.KeyRight, tea.KeyPgDown:
+		return m.handleRoundNavigation(1), nil
+	case tea.KeyEsc:
+		return m, func() tea.Msg { return BackToMenuMsg{} }
+	case tea.KeyDown:
+		m.handleMatchSelection(1)
+	case tea.KeyUp:
+		m.handleMatchSelection(-1)
+	case tea.KeyEnter:
+		return m.handleMatchEnter()
+	}
+
+	// Handle string keys
+	switch msg.String() {
+	case "c":
+		return m.handleCreateTournament()
+	case "h":
+		return m.handleRoundNavigation(-1), nil
+	case "l":
+		return m.handleRoundNavigation(1), nil
+	case "j":
+		m.handleMatchSelection(1)
+	case "k":
+		m.handleMatchSelection(-1)
+	case "q":
+		return m, func() tea.Msg { return BackToMenuMsg{} }
+	}
+
+	return m, nil
+}
+
+// handleRoundNavigation navigates between rounds
+func (m *FixtureModel) handleRoundNavigation(direction int) *FixtureModel {
+	m.currentRound += direction
+	if m.currentRound < 0 {
+		m.currentRound = len(m.division.Rounds) - 1
+	} else if m.currentRound >= len(m.division.Rounds) {
+		m.currentRound = 0
+	}
+	m.selectedMatch = 0
+	return m
+}
+
+// handleMatchSelection handles match selection up/down
+func (m *FixtureModel) handleMatchSelection(direction int) {
+	currentRound := m.GetCurrentRound()
+	if currentRound == nil || len(currentRound.Matches) == 0 {
+		return
+	}
+
+	m.selectedMatch += direction
+	if m.selectedMatch < 0 {
+		m.selectedMatch = len(currentRound.Matches) - 1
+	} else if m.selectedMatch >= len(currentRound.Matches) {
+		m.selectedMatch = 0
+	}
+}
+
+// handleMatchEnter handles Enter key on selected match
+func (m *FixtureModel) handleMatchEnter() (tea.Model, tea.Cmd) {
+	currentRound := m.GetCurrentRound()
+	if currentRound == nil || m.selectedMatch >= len(currentRound.Matches) {
+		return m, nil
+	}
+
+	selectedMatch := currentRound.Matches[m.selectedMatch]
+	if selectedMatch.Played && selectedMatch.BGALink != "" {
+		// Copy existing link to clipboard
+		if err := clipboard.WriteAll(selectedMatch.BGALink); err == nil {
+			m.statusMessage = "Tournament link copied to clipboard!"
+		} else {
+			m.statusMessage = "Failed to copy link to clipboard"
+		}
+
+		return m, tea.Tick(time.Second*3, func(time.Time) tea.Msg {
+			return clearStatusMsg{}
+		})
+	}
+
+	// Match not played, show create tournament message
+	m.statusMessage = "Press 'c' to create tournament for this match"
+	return m, nil
+}
+
+// handleCreateTournament handles 'c' key for tournament creation
+func (m *FixtureModel) handleCreateTournament() (tea.Model, tea.Cmd) {
+	currentRound := m.GetCurrentRound()
+	if currentRound == nil || m.selectedMatch >= len(currentRound.Matches) {
+		return m, nil
+	}
+
+	selectedMatch := currentRound.Matches[m.selectedMatch]
+	if !selectedMatch.Played {
+		// Create and show datetime picker
+		m.dateTimePicker = NewDateTimePickerModel(
+			selectedMatch.HomePlayer,
+			selectedMatch.AwayPlayer,
+			m.division.Name,
+			m.currentRound+1,
+			selectedMatch.ID, // Use match ID as match number
+			selectedMatch.ID,
+		)
+		m.showDatePicker = true
+		return m, m.dateTimePicker.Init()
+	}
+
+	return m, nil
 }

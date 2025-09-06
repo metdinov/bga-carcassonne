@@ -6,6 +6,8 @@ Tournament management for [BoardGameArena](https://boardgamearena.com) Carcasson
 
 - **Tournament Fixtures** - Parse CSV files with match schedules
 - **Interactive Navigation** - Browse tournaments by division and round
+- **DateTime Picker** - Schedule tournaments with local time and UTC offset display
+- **Tournament Confirmation** - Review all details before creating tournaments
 - **Match Selection** - Copy tournament links or create new tournaments
 - **Swiss System Support** - View tournament standings and progression
 

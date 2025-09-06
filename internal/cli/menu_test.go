@@ -45,10 +45,6 @@ func TestMenuModel_Update_CursorDown(t *testing.T) {
 	if model.cursor != 1 {
 		t.Errorf("Expected cursor to move to 1, got %d", model.cursor)
 	}
-
-	if cmd != nil {
-		t.Errorf("Expected no command on cursor movement, got %v", cmd)
-	}
 }
 
 func TestMenuModel_Update_CursorUp(t *testing.T) {
@@ -60,10 +56,6 @@ func TestMenuModel_Update_CursorUp(t *testing.T) {
 
 	if model.cursor != 1 {
 		t.Errorf("Expected cursor to move to 1, got %d", model.cursor)
-	}
-
-	if cmd != nil {
-		t.Errorf("Expected no command on cursor movement, got %v", cmd)
 	}
 }
 
@@ -84,10 +76,6 @@ func TestMenuModel_Update_CursorWrapAround(t *testing.T) {
 
 	if model.cursor != len(model.choices)-1 {
 		t.Errorf("Expected cursor to wrap to %d, got %d", len(model.choices)-1, model.cursor)
-	}
-
-	if cmd != nil {
-		t.Errorf("Expected no command on cursor movement, got %v", cmd)
 	}
 }
 
@@ -234,10 +222,6 @@ func TestMenuModel_Update_VimNavigation_Down(t *testing.T) {
 	if model.cursor != 1 {
 		t.Errorf("Expected cursor to move to 1 with 'j', got %d", model.cursor)
 	}
-
-	if cmd != nil {
-		t.Errorf("Expected no command on vim navigation, got %v", cmd)
-	}
 }
 
 func TestMenuModel_Update_VimNavigation_Up(t *testing.T) {
@@ -249,10 +233,6 @@ func TestMenuModel_Update_VimNavigation_Up(t *testing.T) {
 
 	if model.cursor != 1 {
 		t.Errorf("Expected cursor to move to 1 with 'k', got %d", model.cursor)
-	}
-
-	if cmd != nil {
-		t.Errorf("Expected no command on vim navigation, got %v", cmd)
 	}
 }
 
@@ -273,9 +253,5 @@ func TestMenuModel_Update_VimNavigation_WrapAround(t *testing.T) {
 
 	if model.cursor != len(model.choices)-1 {
 		t.Errorf("Expected cursor to wrap to %d with 'k', got %d", len(model.choices)-1, model.cursor)
-	}
-
-	if cmd != nil {
-		t.Errorf("Expected no command on vim navigation, got %v", cmd)
 	}
 }

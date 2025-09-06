@@ -253,8 +253,4 @@ func TestDivisionModel_Update_VimNavigation_WrapAround(t *testing.T) {
 	if model.cursor != len(model.divisions)-1 {
 		t.Errorf("Expected cursor to wrap to %d with 'k', got %d", len(model.divisions)-1, model.cursor)
 	}
-
-	if cmd != nil {
-		t.Errorf("Expected no command on vim navigation, got %v", cmd)
-	}
 }

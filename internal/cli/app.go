@@ -3,6 +3,7 @@ package cli
 import (
 	tea "github.com/charmbracelet/bubbletea"
 
+	"carca-cli/internal/bga"
 	"carca-cli/internal/fixtures"
 )
 
@@ -64,6 +65,11 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			m.fixtureModel = NewFixtureModel(division)
 		}
+
+		// Set up BGA client with mock client for now
+		// In production, this would be a real client
+		mockClient := bga.NewMockClient("", "")
+		m.fixtureModel.SetBGAClient(mockClient)
 
 		return m, nil
 
