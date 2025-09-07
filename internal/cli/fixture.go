@@ -409,7 +409,7 @@ func (m *FixtureModel) formatMatchesTable(matches []*fixtures.Match) string {
 				return lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
 			}
 		}).
-		Headers("DUELO", "PLAYED", "LOCAL", "VISITOR", "RESULT", "DATE", "TOURNAMENT_ID")
+		Headers("DUELO", "PLAYED", "HOME", "AWAY", "RESULT", "DATE", "TOURNAMENT_ID")
 
 	for i, match := range matches {
 		var playedStatus string

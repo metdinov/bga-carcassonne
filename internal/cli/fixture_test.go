@@ -278,7 +278,7 @@ func TestFixtureModel_View_ShowsTableFormat(t *testing.T) {
 	view := model.View()
 
 	// Should show table headers
-	expectedHeaders := []string{"PLAYED", "LOCAL", "VISITOR", "RESULT", "DATE", "TOURNAMENT_ID"}
+	expectedHeaders := []string{"PLAYED", "HOME", "AWAY", "RESULT", "DATE", "TOURNAMENT_ID"}
 	for _, header := range expectedHeaders {
 		if !strings.Contains(view, header) {
 			t.Errorf("Expected view to contain table header '%s', got: %s", header, view)
@@ -382,7 +382,7 @@ func TestFixtureModel_TableFormat_RealData(t *testing.T) {
 	}
 
 	// Should contain all expected columns
-	expectedHeaders := []string{"PLAYED", "LOCAL", "VISITOR", "RESULT", "DATE", "TOURNAMENT_ID"}
+	expectedHeaders := []string{"PLAYED", "HOME", "AWAY", "RESULT", "DATE", "TOURNAMENT_ID"}
 	for _, header := range expectedHeaders {
 		if !strings.Contains(view, header) {
 			t.Errorf("Expected table header '%s' in real data view", header)
@@ -1891,6 +1891,43 @@ func TestFixtureModel_View_ShowsMatchNumberColumn(t *testing.T) {
 	}
 }
 
+func TestFixtureModel_View_HomeAwayColumnHeaders(t *testing.T) {
+	// Create test data
+	division := &fixtures.Division{
+		Name: "Elite",
+		Rounds: []*fixtures.Round{
+			{
+				Number:    1,
+				DateRange: "11/08 - 17/08",
+				Matches: []*fixtures.Match{
+					{ID: 1, HomePlayer: "herchu", HomeScore: 2, AwayScore: 1, AwayPlayer: "Lord Trooper", DateTime: "12/08 - 09:30", BGALink: "https://boardgamearena.com/tournament?id=423761", Played: true},
+					{ID: 2, HomePlayer: "webbi", HomeScore: 0, AwayScore: 0, AwayPlayer: "alehrosario", DateTime: "", BGALink: "", Played: false},
+				},
+			},
+		},
+	}
+
+	model := NewFixtureModel(division)
+	view := model.View()
+
+	// Check that the table header uses HOME and AWAY instead of LOCAL and VISITOR
+	if !strings.Contains(view, "HOME") {
+		t.Error("Expected table header to contain 'HOME' column")
+	}
+
+	if !strings.Contains(view, "AWAY") {
+		t.Error("Expected table header to contain 'AWAY' column")
+	}
+
+	if strings.Contains(view, "LOCAL") {
+		t.Error("Expected table header to NOT contain 'LOCAL' column")
+	}
+
+	if strings.Contains(view, "VISITOR") {
+		t.Error("Expected table header to NOT contain 'VISITOR' column")
+	}
+}
+
 func TestFixtureModel_View_MatchNumberColumnDemo(t *testing.T) {
 	// Create test data that mimics real tournament data
 	division := &fixtures.Division{
@@ -1958,5 +1995,61 @@ func TestFixtureModel_View_MatchNumberColumnDemo(t *testing.T) {
 
 	if !foundMatch20 {
 		t.Error("Expected to find match 20 in the table")
+	}
+}
+
+func TestFixtureModel_View_CompleteTableStructureDemo(t *testing.T) {
+	// Create comprehensive test data showing the complete table structure
+	division := &fixtures.Division{
+		Name: "Elite",
+		Rounds: []*fixtures.Round{
+			{
+				Number:    1,
+				DateRange: "11/08 - 17/08",
+				Matches: []*fixtures.Match{
+					{ID: 1, HomePlayer: "herchu", HomeScore: 2, AwayScore: 1, AwayPlayer: "Lord Trooper", DateTime: "12/08 - 09:30", BGALink: "https://boardgamearena.com/tournament?id=423761", Played: true},
+					{ID: 2, HomePlayer: "webbi", HomeScore: 2, AwayScore: 0, AwayPlayer: "alehrosario", DateTime: "13/08 - 22:00", BGALink: "https://boardgamearena.com/tournament?id=423630", Played: true},
+					{ID: 17, HomePlayer: "Academia47", HomeScore: 0, AwayScore: 0, AwayPlayer: "bignacho610", DateTime: "", BGALink: "", Played: false},
+				},
+			},
+		},
+	}
+
+	model := NewFixtureModel(division)
+	view := model.View()
+
+	t.Logf("Complete table structure with DUELO and HOME/AWAY columns:\n%s", view)
+
+	// Verify all column headers are present
+	requiredHeaders := []string{"DUELO", "PLAYED", "HOME", "AWAY", "RESULT", "DATE", "TOURNAMENT_ID"}
+	for _, header := range requiredHeaders {
+		if !strings.Contains(view, header) {
+			t.Errorf("Expected table to contain header '%s'", header)
+		}
+	}
+
+	// Verify old headers are not present
+	deprecatedHeaders := []string{"LOCAL", "VISITOR"}
+	for _, header := range deprecatedHeaders {
+		if strings.Contains(view, header) {
+			t.Errorf("Expected table to NOT contain deprecated header '%s'", header)
+		}
+	}
+
+	// Verify match data is displayed correctly
+	expectedData := []string{"1", "2", "17", "herchu", "Lord Trooper", "webbi", "alehrosario", "Academia47", "bignacho610"}
+	for _, data := range expectedData {
+		if !strings.Contains(view, data) {
+			t.Errorf("Expected table to contain data '%s'", data)
+		}
+	}
+
+	// Verify the table shows both played and unplayed matches
+	if !strings.Contains(view, "✓") {
+		t.Error("Expected table to show checkmark for played matches")
+	}
+
+	if !strings.Contains(view, "○") {
+		t.Error("Expected table to show circle for unplayed matches")
 	}
 }
