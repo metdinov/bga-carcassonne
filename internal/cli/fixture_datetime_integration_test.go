@@ -79,11 +79,10 @@ func TestFixtureModel_DateTimePickerIntegration(t *testing.T) {
 		"Division: Elite - Round 1 - Duelo 15",
 		"UTC",
 		"Selected:",
-		"Navigation:",
-		"↑/↓ arrows: Change date or hour values",
-		"←/→ arrows: Move between date and time fields",
-		"Tab/Space: Switch between components",
-		"Enter: Confirm selection | Esc: Cancel",
+		"Use ↑/↓ to change date",
+		"←/→ to move between date/time",
+		"Enter to confirm",
+		"Esc to cancel",
 	}
 
 	for _, element := range expectedElements {

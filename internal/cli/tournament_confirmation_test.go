@@ -169,6 +169,7 @@ func TestTournamentConfirmationModel_View(t *testing.T) {
 		"3 points per city",
 		"4 points per two tile city",
 		"Press Enter to create tournament",
+		"Press 'e' to edit date/time",
 		"Press Esc to cancel",
 		"UTC",
 	}
@@ -317,5 +318,55 @@ func TestTournamentConfirmationModel_TimezoneDisplay(t *testing.T) {
 	// Should contain formatted date and time
 	if !strings.Contains(view, "Date & Time:") {
 		t.Error("Expected view to contain date & time information")
+	}
+}
+
+func TestTournamentConfirmationModel_Update_EditKey(t *testing.T) {
+	selectedTime := time.Date(2025, 3, 15, 14, 30, 0, 0, time.Local)
+	model := NewTournamentConfirmationModel("herchu", "Lord Trooper", "Elite", 1, 15, 15, selectedTime)
+
+	// Send 'e' key
+	updatedModel, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("e")})
+
+	if cmd == nil {
+		t.Fatal("Expected command when pressing 'e'")
+	}
+
+	// Execute the command to get the message
+	msg := cmd()
+	if editMsg, ok := msg.(EditDateTimeMsg); ok {
+		if editMsg.HomePlayer != "herchu" {
+			t.Errorf("Expected HomePlayer 'herchu', got %s", editMsg.HomePlayer)
+		}
+		if editMsg.AwayPlayer != "Lord Trooper" {
+			t.Errorf("Expected AwayPlayer 'Lord Trooper', got %s", editMsg.AwayPlayer)
+		}
+		if editMsg.Division != "Elite" {
+			t.Errorf("Expected Division 'Elite', got %s", editMsg.Division)
+		}
+		if editMsg.RoundNumber != 1 {
+			t.Errorf("Expected RoundNumber 1, got %d", editMsg.RoundNumber)
+		}
+		if editMsg.MatchNumber != 15 {
+			t.Errorf("Expected MatchNumber 15, got %d", editMsg.MatchNumber)
+		}
+		if editMsg.MatchID != 15 {
+			t.Errorf("Expected MatchID 15, got %d", editMsg.MatchID)
+		}
+		if !editMsg.DateTime.Equal(selectedTime) {
+			t.Errorf("Expected DateTime %v, got %v", selectedTime, editMsg.DateTime)
+		}
+	} else {
+		t.Errorf("Expected EditDateTimeMsg, got %T", msg)
+	}
+
+	// Check that the model state hasn't changed (edit doesn't modify model state)
+	if confirmationModel, ok := updatedModel.(*TournamentConfirmationModel); ok {
+		if confirmationModel.IsConfirmed() {
+			t.Error("Expected model to not be confirmed after pressing 'e'")
+		}
+		if confirmationModel.IsCanceled() {
+			t.Error("Expected model to not be canceled after pressing 'e'")
+		}
 	}
 }

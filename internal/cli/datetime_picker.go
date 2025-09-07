@@ -59,7 +59,7 @@ func NewDateTimePickerModel(
 		picker: &picker,
 		title:  title,
 		instructions: "Use ↑/↓ to change date, ←/→ to move between date/time, " +
-			"Tab to switch fields, Enter to confirm, Esc to cancel",
+			"Enter to confirm, Esc to cancel",
 		timezone:    localTZ,
 		homePlayer:  homePlayer,
 		awayPlayer:  awayPlayer,
@@ -67,6 +67,45 @@ func NewDateTimePickerModel(
 		roundNumber: roundNumber,
 		matchNumber: matchNumber,
 		matchID:     matchID,
+		style: lipgloss.NewStyle().
+			Padding(1).
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#7D56F4")),
+	}
+}
+
+// NewDateTimePickerModelWithTime creates a new datetime picker model with initial time
+func NewDateTimePickerModelWithTime(
+	homePlayer, awayPlayer, division string,
+	roundNumber, matchNumber, matchID int,
+	initialTime time.Time,
+) *DateTimePickerModel {
+	// Get timezone from initial time
+	timezone := initialTime.Location()
+
+	// Create picker with default settings
+	picker := bubbledatetimepicker.NewDateAndHourModel()
+
+	title := fmt.Sprintf("Edit Tournament: %s vs %s", homePlayer, awayPlayer)
+
+	// Format the previous time for display in instructions
+	prevTimeStr := initialTime.Format("Monday, January 2, 2006 at 3:04 PM")
+	instructions := fmt.Sprintf("Previously selected: %s\n"+
+		"Use ↑/↓ to change date, ←/→ to move between date/time, "+
+		"Enter to confirm, Esc to cancel", prevTimeStr)
+
+	return &DateTimePickerModel{
+		picker:       &picker,
+		title:        title,
+		instructions: instructions,
+		timezone:     timezone,
+		selectedTime: initialTime,
+		homePlayer:   homePlayer,
+		awayPlayer:   awayPlayer,
+		division:     division,
+		roundNumber:  roundNumber,
+		matchNumber:  matchNumber,
+		matchID:      matchID,
 		style: lipgloss.NewStyle().
 			Padding(1).
 			Border(lipgloss.RoundedBorder()).
@@ -172,11 +211,7 @@ func (m *DateTimePickerModel) View() string {
 		currentTime.Format("Monday, January 2, 2006 at 3:04 PM"))
 	content += fmt.Sprintf(" (%s)", offsetStr)
 
-	content += "\n\nNavigation:"
-	content += "\n• ↑/↓ arrows: Change date or hour values"
-	content += "\n• ←/→ arrows: Move between date and time fields"
-	content += "\n• Tab/Space: Switch between components"
-	content += "\n• Enter: Confirm selection | Esc: Cancel"
+	content += "\n\n" + m.instructions
 
 	return m.style.Render(content)
 }

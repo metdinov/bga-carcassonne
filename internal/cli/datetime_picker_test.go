@@ -170,11 +170,10 @@ func TestDateTimePickerModel_View(t *testing.T) {
 	expectedStrings := []string{
 		"Schedule Tournament: herchu vs Lord Trooper",
 		"Division: Elite - Round 1 - Duelo 15",
-		"Navigation:",
-		"↑/↓ arrows: Change date or hour values",
-		"←/→ arrows: Move between date and time fields",
-		"Tab/Space: Switch between components",
-		"Enter: Confirm selection | Esc: Cancel",
+		"Use ↑/↓ to change date",
+		"←/→ to move between date/time",
+		"Enter to confirm",
+		"Esc to cancel",
 		"Selected:",
 		"UTC",
 	}
@@ -345,16 +344,94 @@ func TestDateTimePickerModel_NavigationInstructions(t *testing.T) {
 
 	// Check for navigation instructions
 	expectedInstructions := []string{
-		"↑/↓ arrows: Change date or hour values",
-		"←/→ arrows: Move between date and time fields",
-		"Tab/Space: Switch between components",
-		"Enter: Confirm selection",
-		"Esc: Cancel",
+		"Use ↑/↓ to change date",
+		"←/→ to move between date/time",
+		"Enter to confirm",
+		"Esc to cancel",
 	}
 
 	for _, instruction := range expectedInstructions {
 		if !strings.Contains(view, instruction) {
 			t.Errorf("Expected view to contain instruction '%s', but it didn't", instruction)
 		}
+	}
+}
+
+func TestNewDateTimePickerModelWithTime(t *testing.T) {
+	targetTime := time.Date(2025, 9, 6, 21, 30, 0, 0, time.Local)
+
+	picker := NewDateTimePickerModelWithTime(
+		"player1", "player2", "Elite", 1, 15, 15, targetTime,
+	)
+
+	if picker == nil {
+		t.Fatal("Expected picker to be created")
+	}
+
+	// Check that basic fields are set correctly
+	if picker.homePlayer != "player1" {
+		t.Errorf("Expected homePlayer 'player1', got %s", picker.homePlayer)
+	}
+
+	if picker.awayPlayer != "player2" {
+		t.Errorf("Expected awayPlayer 'player2', got %s", picker.awayPlayer)
+	}
+
+	if picker.division != "Elite" {
+		t.Errorf("Expected division 'Elite', got %s", picker.division)
+	}
+
+	if picker.roundNumber != 1 {
+		t.Errorf("Expected roundNumber 1, got %d", picker.roundNumber)
+	}
+
+	if picker.matchNumber != 15 {
+		t.Errorf("Expected matchNumber 15, got %d", picker.matchNumber)
+	}
+
+	// Check that the selected time is stored
+	if !picker.selectedTime.Equal(targetTime) {
+		t.Errorf("Expected selectedTime %v, got %v", targetTime, picker.selectedTime)
+	}
+
+	// Check that the title reflects it's an edit operation
+	expectedTitle := "Edit Tournament: player1 vs player2"
+	if picker.title != expectedTitle {
+		t.Errorf("Expected title '%s', got '%s'", expectedTitle, picker.title)
+	}
+
+	// Check that the instructions contain the previously selected time
+	expectedTimeStr := "Saturday, September 6, 2025 at 9:30 PM"
+	if !strings.Contains(picker.instructions, expectedTimeStr) {
+		t.Errorf("Expected instructions to contain '%s', got '%s'", expectedTimeStr, picker.instructions)
+	}
+
+	if !strings.Contains(picker.instructions, "Previously selected:") {
+		t.Error("Expected instructions to mention 'Previously selected:'")
+	}
+}
+
+func TestEditDateTimeInstructions(t *testing.T) {
+	targetTime := time.Date(2025, 3, 15, 14, 30, 0, 0, time.Local)
+
+	picker := NewDateTimePickerModelWithTime(
+		"herchu", "Lord Trooper", "Elite", 1, 15, 15, targetTime,
+	)
+
+	// Check that the view contains the previously selected time
+	view := picker.View()
+
+	expectedTimeStr := "Saturday, March 15, 2025 at 2:30 PM"
+	if !strings.Contains(view, expectedTimeStr) {
+		t.Errorf("Expected view to contain previously selected time '%s'", expectedTimeStr)
+	}
+
+	// Check that it shows it's an edit operation
+	if !strings.Contains(view, "Edit Tournament:") {
+		t.Error("Expected view to show 'Edit Tournament:' in title")
+	}
+
+	if !strings.Contains(view, "Previously selected:") {
+		t.Error("Expected view to show 'Previously selected:' in instructions")
 	}
 }

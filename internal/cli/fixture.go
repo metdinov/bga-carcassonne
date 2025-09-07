@@ -114,6 +114,20 @@ func (m *FixtureModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Tick(time.Second*2, func(time.Time) tea.Msg {
 			return clearStatusMsg{}
 		})
+	case EditDateTimeMsg:
+		// Edit datetime - go back to datetime picker with current values
+		m.showConfirmation = false
+		m.dateTimePicker = NewDateTimePickerModelWithTime(
+			msg.HomePlayer,
+			msg.AwayPlayer,
+			msg.Division,
+			msg.RoundNumber,
+			msg.MatchNumber,
+			msg.MatchID,
+			msg.DateTime,
+		)
+		m.showDatePicker = true
+		return m, m.dateTimePicker.Init()
 	}
 
 	return m, nil
@@ -395,7 +409,7 @@ func (m *FixtureModel) formatMatchesTable(matches []*fixtures.Match) string {
 				return lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
 			}
 		}).
-		Headers("PLAYED", "LOCAL", "VISITOR", "RESULT", "DATE", "TOURNAMENT_ID")
+		Headers("DUELO", "PLAYED", "LOCAL", "VISITOR", "RESULT", "DATE", "TOURNAMENT_ID")
 
 	for i, match := range matches {
 		var playedStatus string
@@ -439,8 +453,11 @@ func (m *FixtureModel) formatMatchesTable(matches []*fixtures.Match) string {
 		homePlayer := fmt.Sprintf("%-*s", maxPlayerWidth, match.HomePlayer)
 		awayPlayer := fmt.Sprintf("%-*s", maxPlayerWidth, match.AwayPlayer)
 
+		// Format match number (Duelo)
+		matchNumber := fmt.Sprintf("%d", match.ID)
+
 		// Add selection indicator for the selected match
-		rowData := []string{playedStatus, homePlayer, awayPlayer, result, datetime, tournamentID}
+		rowData := []string{matchNumber, playedStatus, homePlayer, awayPlayer, result, datetime, tournamentID}
 		if i == m.selectedMatch {
 			// Highlight selected row
 			for j, cell := range rowData {
@@ -451,7 +468,7 @@ func (m *FixtureModel) formatMatchesTable(matches []*fixtures.Match) string {
 			}
 		}
 
-		t.Row(rowData[0], rowData[1], rowData[2], rowData[3], rowData[4], rowData[5])
+		t.Row(rowData[0], rowData[1], rowData[2], rowData[3], rowData[4], rowData[5], rowData[6])
 	}
 
 	return t.Render()
@@ -555,7 +572,7 @@ func (m *FixtureModel) handleSubModelMessages(msg tea.Msg) (tea.Model, tea.Cmd, 
 
 	if m.showConfirmation && m.confirmationModel != nil {
 		switch msg.(type) {
-		case TournamentConfirmedMsg, TournamentConfirmationCanceledMsg:
+		case TournamentConfirmedMsg, TournamentConfirmationCanceledMsg, EditDateTimeMsg:
 			// These are for the FixtureModel.
 			return m, nil, false
 		default:

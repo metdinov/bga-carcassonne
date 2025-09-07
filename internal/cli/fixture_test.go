@@ -3,6 +3,7 @@ package cli
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"carca-cli/internal/bga"
 	"carca-cli/internal/fixtures"
@@ -1647,5 +1648,315 @@ func TestFixtureModel_Update_CreateTournamentWithC(t *testing.T) {
 
 	if fixModel.dateTimePicker == nil {
 		t.Error("Expected datetime picker to be created")
+	}
+}
+
+func TestFixtureModel_EditDateTime(t *testing.T) {
+	// Create test data
+	division := &fixtures.Division{
+		Name: "Elite",
+		Rounds: []*fixtures.Round{
+			{
+				Number:    1,
+				DateRange: "11/08 - 17/08",
+				Matches: []*fixtures.Match{
+					{
+						ID:         1,
+						HomePlayer: "player1",
+						AwayPlayer: "player2",
+						BGALink:    "",
+						Played:     false,
+					},
+				},
+			},
+		},
+	}
+
+	model := NewFixtureModel(division)
+	model.bgaClient = bga.NewMockClient("test", "test")
+
+	// Step 1: Start tournament creation process
+	model.selectedMatch = 0
+	updatedModel, _ := model.handleCreateTournament()
+	fixtureModel := updatedModel.(*FixtureModel)
+
+	if !fixtureModel.showDatePicker {
+		t.Fatal("Expected datetime picker to be shown")
+	}
+
+	// Step 2: Select a datetime
+	testTime := time.Date(2025, 9, 6, 21, 30, 0, 0, time.Local)
+	dateTimeMsg := DateTimeSelectedMsg{
+		HomePlayer:  "player1",
+		AwayPlayer:  "player2",
+		Division:    "Elite",
+		RoundNumber: 1,
+		MatchNumber: 1,
+		MatchID:     1,
+		DateTime:    testTime,
+	}
+
+	updatedModel, _ = fixtureModel.Update(dateTimeMsg)
+	fixtureModel = updatedModel.(*FixtureModel)
+
+	// Should show confirmation screen
+	if !fixtureModel.showConfirmation {
+		t.Fatal("Expected confirmation screen to be shown")
+	}
+	if fixtureModel.showDatePicker {
+		t.Error("Expected datetime picker to be hidden")
+	}
+
+	// Step 3: Press 'e' to edit the datetime
+	editMsg := EditDateTimeMsg{
+		HomePlayer:  "player1",
+		AwayPlayer:  "player2",
+		Division:    "Elite",
+		RoundNumber: 1,
+		MatchNumber: 1,
+		MatchID:     1,
+		DateTime:    testTime,
+	}
+
+	updatedModel, _ = fixtureModel.Update(editMsg)
+	fixtureModel = updatedModel.(*FixtureModel)
+
+	// Should go back to datetime picker
+	if !fixtureModel.showDatePicker {
+		t.Error("Expected datetime picker to be shown after edit")
+	}
+	if fixtureModel.showConfirmation {
+		t.Error("Expected confirmation screen to be hidden after edit")
+	}
+
+	// Verify datetime picker has the correct initial values
+	if fixtureModel.dateTimePicker == nil {
+		t.Fatal("Expected datetime picker to be created")
+	}
+
+	// Verify that the picker was initialized with the selected time
+	if !fixtureModel.dateTimePicker.selectedTime.Equal(testTime) {
+		t.Errorf("Expected datetime picker to be initialized with %v, got %v",
+			testTime, fixtureModel.dateTimePicker.selectedTime)
+	}
+
+	if fixtureModel.dateTimePicker.homePlayer != "player1" {
+		t.Errorf("Expected homePlayer 'player1', got %s", fixtureModel.dateTimePicker.homePlayer)
+	}
+
+	if fixtureModel.dateTimePicker.awayPlayer != "player2" {
+		t.Errorf("Expected awayPlayer 'player2', got %s", fixtureModel.dateTimePicker.awayPlayer)
+	}
+}
+
+func TestFixtureModel_EditDateTimeWithKeyPress(t *testing.T) {
+	// Create test data
+	division := &fixtures.Division{
+		Name: "Elite",
+		Rounds: []*fixtures.Round{
+			{
+				Number:    1,
+				DateRange: "11/08 - 17/08",
+				Matches: []*fixtures.Match{
+					{
+						ID:         1,
+						HomePlayer: "player1",
+						AwayPlayer: "player2",
+						BGALink:    "",
+						Played:     false,
+					},
+				},
+			},
+		},
+	}
+
+	model := NewFixtureModel(division)
+	model.bgaClient = bga.NewMockClient("test", "test")
+
+	// Step 1: Start tournament creation and reach confirmation screen
+	model.selectedMatch = 0
+	updatedModel, _ := model.handleCreateTournament()
+	fixtureModel := updatedModel.(*FixtureModel)
+
+	// Step 2: Select datetime and get to confirmation screen
+	testTime := time.Date(2025, 9, 6, 21, 30, 0, 0, time.Local)
+	dateTimeMsg := DateTimeSelectedMsg{
+		HomePlayer:  "player1",
+		AwayPlayer:  "player2",
+		Division:    "Elite",
+		RoundNumber: 1,
+		MatchNumber: 1,
+		MatchID:     1,
+		DateTime:    testTime,
+	}
+
+	updatedModel, _ = fixtureModel.Update(dateTimeMsg)
+	fixtureModel = updatedModel.(*FixtureModel)
+
+	// Should be in confirmation screen
+	if !fixtureModel.showConfirmation {
+		t.Fatal("Expected confirmation screen to be shown")
+	}
+
+	// Step 3: Simulate 'e' key press in confirmation screen
+	keyMsg := tea.KeyMsg{
+		Type:  tea.KeyRunes,
+		Runes: []rune("e"),
+	}
+
+	updatedModel, cmd := fixtureModel.Update(keyMsg)
+	fixtureModel = updatedModel.(*FixtureModel)
+
+	// Execute the command and process the EditDateTimeMsg
+	if cmd != nil {
+		msg := cmd()
+		updatedModel, _ = fixtureModel.Update(msg)
+		fixtureModel = updatedModel.(*FixtureModel)
+	}
+
+	// Should be back to datetime picker
+	if !fixtureModel.showDatePicker {
+		t.Error("Expected datetime picker to be shown after pressing 'e'")
+	}
+	if fixtureModel.showConfirmation {
+		t.Error("Expected confirmation screen to be hidden after pressing 'e'")
+	}
+
+	// Verify the confirmation screen view shows the edit instruction
+	confirmationModel := NewTournamentConfirmationModel(
+		"player1", "player2", "Elite", 1, 1, 1, testTime,
+	)
+
+	view := confirmationModel.View()
+	if !strings.Contains(view, "Press 'e' to edit date/time") {
+		t.Error("Expected confirmation view to contain edit instruction")
+	}
+}
+
+func TestFixtureModel_View_ShowsMatchNumberColumn(t *testing.T) {
+	// Create test data with specific match IDs
+	division := &fixtures.Division{
+		Name: "Elite",
+		Rounds: []*fixtures.Round{
+			{
+				Number:    1,
+				DateRange: "11/08 - 17/08",
+				Matches: []*fixtures.Match{
+					{ID: 1, HomePlayer: "herchu", HomeScore: 2, AwayScore: 1, AwayPlayer: "Lord Trooper", DateTime: "12/08 - 09:30", BGALink: "https://boardgamearena.com/tournament?id=423761", Played: true},
+					{ID: 17, HomePlayer: "webbi", HomeScore: 0, AwayScore: 0, AwayPlayer: "alehrosario", DateTime: "", BGALink: "", Played: false},
+				},
+			},
+		},
+	}
+
+	model := NewFixtureModel(division)
+	view := model.View()
+
+	// Check that the table header includes DUELO column
+	if !strings.Contains(view, "DUELO") {
+		t.Error("Expected table header to contain 'DUELO' column")
+	}
+
+	// Check that match numbers are displayed in the table
+	if !strings.Contains(view, "1") {
+		t.Error("Expected table to show match number 1")
+	}
+
+	if !strings.Contains(view, "17") {
+		t.Error("Expected table to show match number 17")
+	}
+
+	// Verify the table structure includes the match number as the first column after DUELO
+	lines := strings.Split(view, "\n")
+	var tableContentFound bool
+	for _, line := range lines {
+		// Look for a line that contains match data (has player names)
+		if strings.Contains(line, "herchu") && strings.Contains(line, "Lord Trooper") {
+			tableContentFound = true
+			// The match number should appear before the player names
+			if !strings.Contains(line, "1") {
+				t.Error("Expected match number 1 to appear in the table row with herchu vs Lord Trooper")
+			}
+		}
+		if strings.Contains(line, "webbi") && strings.Contains(line, "alehrosario") {
+			// The match number should appear before the player names
+			if !strings.Contains(line, "17") {
+				t.Error("Expected match number 17 to appear in the table row with webbi vs alehrosario")
+			}
+		}
+	}
+
+	if !tableContentFound {
+		t.Error("Expected to find table content with player names")
+	}
+}
+
+func TestFixtureModel_View_MatchNumberColumnDemo(t *testing.T) {
+	// Create test data that mimics real tournament data
+	division := &fixtures.Division{
+		Name: "Elite",
+		Rounds: []*fixtures.Round{
+			{
+				Number:    1,
+				DateRange: "11/08 - 17/08",
+				Matches: []*fixtures.Match{
+					{ID: 1, HomePlayer: "herchu", HomeScore: 2, AwayScore: 1, AwayPlayer: "Lord Trooper", DateTime: "12/08 - 09:30", BGALink: "https://boardgamearena.com/tournament?id=423761", Played: true},
+					{ID: 2, HomePlayer: "webbi", HomeScore: 2, AwayScore: 0, AwayPlayer: "alehrosario", DateTime: "13/08 - 22:00", BGALink: "https://boardgamearena.com/tournament?id=423630", Played: true},
+					{ID: 3, HomePlayer: "Academia47", HomeScore: 1, AwayScore: 2, AwayPlayer: "bignacho610", DateTime: "15/08 - 10:00", BGALink: "https://boardgamearena.com/tournament?id=424490", Played: true},
+				},
+			},
+			{
+				Number:    5,
+				DateRange: "08/09 - 14/09",
+				Matches: []*fixtures.Match{
+					{ID: 17, HomePlayer: "webbi", HomeScore: 0, AwayScore: 0, AwayPlayer: "herchu", DateTime: "", BGALink: "", Played: false},
+					{ID: 18, HomePlayer: "Academia47", HomeScore: 0, AwayScore: 0, AwayPlayer: "maticarrizoc", DateTime: "", BGALink: "", Played: false},
+					{ID: 19, HomePlayer: "Nicoooo95", HomeScore: 0, AwayScore: 0, AwayPlayer: "alehrosario", DateTime: "", BGALink: "", Played: false},
+					{ID: 20, HomePlayer: "bignacho610", HomeScore: 0, AwayScore: 0, AwayPlayer: "Lord Trooper", DateTime: "", BGALink: "", Played: false},
+				},
+			},
+		},
+	}
+
+	model := NewFixtureModel(division)
+
+	// Test Round 1 (played matches)
+	view := model.View()
+	t.Logf("Round 1 with played matches (showing DUELO column):\n%s", view)
+
+	// Verify DUELO column shows correct match numbers
+	if !strings.Contains(view, "DUELO") {
+		t.Error("Expected DUELO column header")
+	}
+
+	// Navigate to Round 5 (unplayed matches)
+	model.currentRound = 1
+	view = model.View()
+	t.Logf("Round 5 with unplayed matches (showing DUELO column):\n%s", view)
+
+	// Check that both played and unplayed matches show their match numbers properly
+	lines := strings.Split(view, "\n")
+	foundMatch17 := false
+	foundMatch20 := false
+
+	for _, line := range lines {
+		if strings.Contains(line, "webbi") && strings.Contains(line, "herchu") {
+			if strings.Contains(line, "17") {
+				foundMatch17 = true
+			}
+		}
+		if strings.Contains(line, "bignacho610") && strings.Contains(line, "Lord Trooper") {
+			if strings.Contains(line, "20") {
+				foundMatch20 = true
+			}
+		}
+	}
+
+	if !foundMatch17 {
+		t.Error("Expected to find match 17 in the table")
+	}
+
+	if !foundMatch20 {
+		t.Error("Expected to find match 20 in the table")
 	}
 }

@@ -46,6 +46,17 @@ type TournamentConfirmedMsg struct {
 // TournamentConfirmationCanceledMsg is sent when the user cancels tournament creation
 type TournamentConfirmationCanceledMsg struct{}
 
+// EditDateTimeMsg is sent when the user wants to edit the selected datetime
+type EditDateTimeMsg struct {
+	DateTime    time.Time
+	HomePlayer  string
+	AwayPlayer  string
+	Division    string
+	RoundNumber int
+	MatchNumber int
+	MatchID     int
+}
+
 // NewTournamentConfirmationModel creates a new tournament confirmation model
 func NewTournamentConfirmationModel(
 	homePlayer, awayPlayer, division string,
@@ -125,6 +136,20 @@ func (m *TournamentConfirmationModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Cmd(func() tea.Msg {
 				return TournamentConfirmationCanceledMsg{}
 			})
+
+		case key.Matches(msg, key.NewBinding(key.WithKeys("e"))):
+			// Edit datetime - go back to datetime picker
+			return m, tea.Cmd(func() tea.Msg {
+				return EditDateTimeMsg{
+					HomePlayer:  m.homePlayer,
+					AwayPlayer:  m.awayPlayer,
+					Division:    m.division,
+					RoundNumber: m.roundNumber,
+					MatchNumber: m.matchNumber,
+					MatchID:     m.matchID,
+					DateTime:    m.selectedTime,
+				}
+			})
 		}
 	}
 
@@ -194,7 +219,7 @@ func (m *TournamentConfirmationModel) View() string {
 	content.WriteString("\n")
 
 	// Instructions
-	instructions := "Press Enter to create tournament • Press Esc to cancel"
+	instructions := "Press Enter to create tournament • Press 'e' to edit date/time • Press Esc to cancel"
 	content.WriteString(m.instructionStyle.Render(instructions))
 
 	return m.style.Render(content.String())
