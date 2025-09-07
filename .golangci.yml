@@ -51,7 +51,6 @@ linters-settings:
     check-blank: true
 
   govet:
-    shadow: true
     enable-all: true
 
   gofmt:
@@ -78,7 +77,6 @@ linters-settings:
       - importShadow
 
   revive:
-    min-confidence: 0
     rules:
       - name: blank-imports
       - name: context-as-argument
