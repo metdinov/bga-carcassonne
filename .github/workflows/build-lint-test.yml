@@ -28,7 +28,9 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y just
 
       - name: Run Linter
-        run: just lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.55
 
       - name: Run Tests
         run: just test
