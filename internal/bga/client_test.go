@@ -571,3 +571,140 @@ func TestTournamentNamingConvention(t *testing.T) {
 		})
 	}
 }
+
+func TestMockClient_ThreeStepTournamentCreation(t *testing.T) {
+	mockClient := NewMockClient("testuser", "testpass")
+	err := mockClient.Login()
+	if err != nil {
+		t.Fatalf("Failed to login: %v", err)
+	}
+
+	// Step 1: Create tournament
+	resp, err := mockClient.CreateSwissTournament("Elite", "herchu", "Lord Trooper", 1, 15)
+	if err != nil {
+		t.Fatalf("Failed to create tournament: %v", err)
+	}
+
+	if resp.TournamentID == 0 {
+		t.Error("Expected valid tournament ID")
+	}
+
+	// Step 2: Launch tournament
+	err = mockClient.LaunchTournament(resp.TournamentID)
+	if err != nil {
+		t.Fatalf("Failed to launch tournament: %v", err)
+	}
+
+	// Step 3: Invite players (using placeholder player IDs for now)
+	err = mockClient.InvitePlayer(resp.TournamentID, "herchu_player_id")
+	if err != nil {
+		t.Fatalf("Failed to invite first player: %v", err)
+	}
+
+	err = mockClient.InvitePlayer(resp.TournamentID, "lord_trooper_player_id")
+	if err != nil {
+		t.Fatalf("Failed to invite second player: %v", err)
+	}
+
+	// Verify tournament is in launched state
+	status, err := mockClient.GetTournamentStatus(resp.TournamentID)
+	if err != nil {
+		t.Fatalf("Failed to get tournament status: %v", err)
+	}
+
+	// Tournament should be in "launched" or "open" state after launching
+	if status.Status == "created" {
+		t.Error("Expected tournament to be launched, but it's still in created state")
+	}
+}
+
+func TestMockClient_CompleteThreeStepWorkflowDemo(t *testing.T) {
+	t.Log("=== Complete Three-Step Tournament Creation Workflow Demo ===")
+
+	mockClient := NewMockClient("testuser", "testpass")
+
+	// Authentication
+	t.Log("Step 0: Authenticating...")
+	err := mockClient.Login()
+	if err != nil {
+		t.Fatalf("Failed to authenticate: %v", err)
+	}
+	t.Log("✓ Authentication successful")
+
+	// Step 1: Create Tournament
+	t.Log("Step 1: Creating tournament...")
+	division := "Elite"
+	homePlayer := "herchu"
+	awayPlayer := "Lord Trooper"
+	roundNum := 1
+	matchNum := 15
+
+	resp, err := mockClient.CreateSwissTournament(division, homePlayer, awayPlayer, roundNum, matchNum)
+	if err != nil {
+		t.Fatalf("Failed to create tournament: %v", err)
+	}
+
+	t.Logf("✓ Tournament created successfully")
+	t.Logf("  - Tournament ID: %d", resp.TournamentID)
+	t.Logf("  - Tournament Link: %s", resp.Link)
+
+	// Verify initial tournament state
+	status, err := mockClient.GetTournamentStatus(resp.TournamentID)
+	if err != nil {
+		t.Fatalf("Failed to get tournament status: %v", err)
+	}
+	t.Logf("  - Initial Status: %s", status.Status)
+
+	// Step 2: Launch Tournament
+	t.Log("Step 2: Launching tournament...")
+	err = mockClient.LaunchTournament(resp.TournamentID)
+	if err != nil {
+		t.Fatalf("Failed to launch tournament: %v", err)
+	}
+	t.Log("✓ Tournament launched successfully")
+
+	// Verify tournament is now open
+	status, err = mockClient.GetTournamentStatus(resp.TournamentID)
+	if err != nil {
+		t.Fatalf("Failed to get tournament status after launch: %v", err)
+	}
+	t.Logf("  - Status after launch: %s", status.Status)
+
+	if status.Status != "open" {
+		t.Errorf("Expected tournament status to be 'open', got '%s'", status.Status)
+	}
+
+	// Step 3: Invite Players
+	t.Log("Step 3: Inviting players...")
+	playerIDs := []string{"herchu_bga_id", "lord_trooper_bga_id"}
+
+	for i, playerID := range playerIDs {
+		t.Logf("  Inviting player %d: %s", i+1, playerID)
+		err = mockClient.InvitePlayer(resp.TournamentID, playerID)
+		if err != nil {
+			t.Fatalf("Failed to invite player %s: %v", playerID, err)
+		}
+	}
+	t.Log("✓ All players invited successfully")
+
+	// Final verification
+	t.Log("Final verification...")
+	finalStatus, err := mockClient.GetTournamentStatus(resp.TournamentID)
+	if err != nil {
+		t.Fatalf("Failed to get final tournament status: %v", err)
+	}
+
+	t.Logf("✓ Tournament workflow completed successfully")
+	t.Logf("  - Final Tournament ID: %d", finalStatus.ID)
+	t.Logf("  - Final Status: %s", finalStatus.Status)
+	t.Logf("  - Tournament Name: %s", finalStatus.Name)
+	t.Logf("  - Players Count: %d", finalStatus.PlayersCount)
+
+	// Validate expected tournament name format
+	expectedName := "1 Fecha - Duelo 15 - herchu vs Lord Trooper"
+	if finalStatus.Name != expectedName {
+		t.Errorf("Expected tournament name '%s', got '%s'", expectedName, finalStatus.Name)
+	}
+
+	t.Log("=== Three-Step Tournament Creation Demo Complete ===")
+}

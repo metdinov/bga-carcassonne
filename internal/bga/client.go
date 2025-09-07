@@ -468,3 +468,65 @@ func (c *Client) Logout() error {
 	c.sessionID = ""
 	return nil
 }
+
+// LaunchTournament launches a created tournament using GET request
+func (c *Client) LaunchTournament(tournamentID int) error {
+	if c.sessionID == "" {
+		return fmt.Errorf("not authenticated: call Login() first")
+	}
+
+	timestamp := time.Now().Unix()
+	launchURL := fmt.Sprintf("%s/tournament/tournament/launchtournament.html?id=%d&dojo.preventCache=%d",
+		c.baseURL, tournamentID, timestamp)
+
+	req, err := http.NewRequest("GET", launchURL, http.NoBody)
+	if err != nil {
+		return fmt.Errorf("failed to create launch request: %w", err)
+	}
+
+	c.setRequestHeaders(req)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("tournament launch request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("tournament launch failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
+}
+
+// InvitePlayer invites a player to a tournament using GET request
+func (c *Client) InvitePlayer(tournamentID int, playerID string) error {
+	if c.sessionID == "" {
+		return fmt.Errorf("not authenticated: call Login() first")
+	}
+
+	timestamp := time.Now().Unix()
+	inviteURL := fmt.Sprintf("%s/tournament/tournament/invitePlayer.html?id=%d&player=%s&dojo.preventCache=%d",
+		c.baseURL, tournamentID, playerID, timestamp)
+
+	req, err := http.NewRequest("GET", inviteURL, http.NoBody)
+	if err != nil {
+		return fmt.Errorf("failed to create invite request: %w", err)
+	}
+
+	c.setRequestHeaders(req)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("player invite request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("player invite failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
+}

@@ -308,6 +308,50 @@ func ExtractTournamentID(link string) (int, error) {
 	return id, nil
 }
 
+// LaunchTournament simulates launching a created tournament
+func (m *MockClient) LaunchTournament(tournamentID int) error {
+	if !m.isAuthenticated {
+		return fmt.Errorf("not authenticated: call Login() first")
+	}
+
+	tournament, exists := m.tournaments[tournamentID]
+	if !exists {
+		return fmt.Errorf("tournament with ID %d not found", tournamentID)
+	}
+
+	// Change tournament status from "created" or "waiting" to "open"
+	if tournament.Status == "created" || tournament.Status == "waiting" {
+		tournament.Status = "open"
+	}
+
+	// Simulate network delay
+	time.Sleep(100 * time.Millisecond)
+
+	return nil
+}
+
+// InvitePlayer simulates inviting a player to a tournament
+func (m *MockClient) InvitePlayer(tournamentID int, playerID string) error {
+	if !m.isAuthenticated {
+		return fmt.Errorf("not authenticated: call Login() first")
+	}
+
+	tournament, exists := m.tournaments[tournamentID]
+	if !exists {
+		return fmt.Errorf("tournament with ID %d not found", tournamentID)
+	}
+
+	// Validate that tournament is in open state (launched)
+	if tournament.Status != "open" {
+		return fmt.Errorf("cannot invite players to tournament in %s state", tournament.Status)
+	}
+
+	// Simulate network delay
+	time.Sleep(50 * time.Millisecond)
+
+	return nil
+}
+
 // Reset clears all tournament data from the mock client
 func (m *MockClient) Reset() {
 	m.tournaments = make(map[int]*TournamentStatus)
